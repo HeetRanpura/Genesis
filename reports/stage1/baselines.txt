@@ -1,0 +1,25 @@
+random     seed=0 deaths/agent-yr=3.94 S(1yr)=0.000 wall=4.2s {'starvation': 825, 'thirst': 706, 'cold': 369, 'fire': 50, 'predator': 70}
+greedy     seed=0 deaths/agent-yr=4.39 S(1yr)=0.000 wall=5.2s {'starvation': 394, 'thirst': 1228, 'cold': 470, 'fire': 59, 'predator': 98}
+heuristic  seed=0 deaths/agent-yr=1.12 S(1yr)=0.252 wall=5.6s {'starvation': 24, 'thirst': 97, 'cold': 249, 'fire': 17, 'predator': 189}
+random     seed=1 deaths/agent-yr=2.67 S(1yr)=0.012 wall=4.8s {'starvation': 495, 'thirst': 552, 'cold': 261, 'predator': 61}
+greedy     seed=1 deaths/agent-yr=2.61 S(1yr)=0.014 wall=6.7s {'starvation': 242, 'thirst': 646, 'cold': 381, 'predator': 67}
+heuristic  seed=1 deaths/agent-yr=0.74 S(1yr)=0.522 wall=6.3s {'starvation': 4, 'thirst': 49, 'cold': 125, 'predator': 181, 'old_age': 19}
+random     seed=2 deaths/agent-yr=2.97 S(1yr)=0.016 wall=4.0s {'starvation': 531, 'thirst': 719, 'cold': 91, 'fire': 118, 'predator': 64}
+greedy     seed=2 deaths/agent-yr=2.66 S(1yr)=0.036 wall=4.9s {'starvation': 297, 'thirst': 814, 'cold': 122, 'fire': 52, 'predator': 77}
+heuristic  seed=2 deaths/agent-yr=0.76 S(1yr)=0.445 wall=5.3s {'starvation': 24, 'thirst': 130, 'cold': 14, 'fire': 40, 'predator': 168, 'old_age': 14}
+random     seed=3 deaths/agent-yr=3.25 S(1yr)=0.020 wall=3.9s {'starvation': 865, 'thirst': 636, 'cold': 61, 'fire': 34, 'predator': 70}
+greedy     seed=3 deaths/agent-yr=3.99 S(1yr)=0.009 wall=4.8s {'starvation': 275, 'thirst': 1581, 'cold': 73, 'fire': 46, 'predator': 72}
+heuristic  seed=3 deaths/agent-yr=1.11 S(1yr)=0.355 wall=4.9s {'starvation': 40, 'thirst': 298, 'cold': 17, 'fire': 10, 'predator': 197, 'old_age': 7}
+random     seed=4 deaths/agent-yr=2.49 S(1yr)=0.030 wall=4.2s {'starvation': 527, 'thirst': 608, 'cold': 43, 'fire': 35, 'predator': 62}
+greedy     seed=4 deaths/agent-yr=2.62 S(1yr)=0.008 wall=5.0s {'starvation': 282, 'thirst': 883, 'cold': 84, 'fire': 33, 'predator': 58}
+heuristic  seed=4 deaths/agent-yr=0.60 S(1yr)=0.557 wall=5.1s {'starvation': 20, 'thirst': 91, 'cold': 8, 'fire': 15, 'predator': 159, 'old_age': 16}
+Baselines, 5 seeds x 2.0 years, 256 agents, fixed population (respawn).
+
+| policy | deaths / agent-year (95% CI) | Kaplan-Meier survival at 1 yr (95% CI) |
+|---|---|---|
+| random | 3.07 [2.66, 3.53] | 0.016 [0.007, 0.024] |
+| greedy | 3.25 [2.62, 3.95] | 0.013 [0.004, 0.025] |
+| heuristic | 0.87 [0.69, 1.05] | 0.426 [0.329, 0.516] |
+
+Deaths by cause (summed over seeds): **random** {'starvation': 3243, 'thirst': 3221, 'cold': 825, 'fire': 237, 'predator': 327}; **greedy** {'starvation': 1490, 'thirst': 5152, 'cold': 1130, 'fire': 190, 'predator': 372}; **heuristic** {'starvation': 112, 'thirst': 665, 'cold': 413, 'fire': 82, 'predator': 894, 'old_age': 56}
+figures in /Users/heetranpura/Genesis/reports/stage1

@@ -1,0 +1,134 @@
+# GENESIS default configuration. Every field here is the documented default; experiment
+# configs only override what they change (deep-merged by sim.config.load_config).
+seed: 0
+
+world:
+  width: 256
+  height: 256
+  continent_falloff: 0.55     # 0 = no ocean border, 1 = strong island shaping
+  sea_level: 0.32             # elevation below this (after shaping) is ocean
+  mountain_level: 0.91        # land-height quantile: impassable, opaque
+  rock_level: 0.80            # land-height quantile: passable hills, stone source
+  lake_min_depth: 0.012       # depression depth (after priority-flood) that becomes lake
+  river_flow_threshold: 180   # flow accumulation (cells) for a river
+  stream_flow_threshold: 90   # smaller streams; these dry up in drought
+  cave_prob: 0.15             # chance a rock cell adjacent to mountain becomes a cave
+  resource_layout: patchy     # patchy | uniform (fertility spatial structure, Stage 7 A)
+
+time:
+  ticks_per_day: 120
+  days_per_season: 8          # year = 4 seasons = 3,840 ticks
+  veg_every: 4                # slow cell dynamics (plants, snow, decay) advance every k ticks by k*dt
+
+climate:
+  base_temp: 14.0             # deg C at sea level, annual mean
+  seasonal_amplitude: 11.0    # summer +, winter -
+  diurnal_amplitude: 4.0
+  lapse_rate: 12.0            # deg C lost per unit elevation above sea level
+  comfort_temp: 16.0
+  cold_temp: -10.0            # body warmth target hits 0 at this effective temperature
+  heat_temp: 31.0             # above this, extra dehydration
+
+weather:
+  # daily Markov chain; probabilities are per-day, modulated by season inside the engine
+  rain_prob: [0.35, 0.15, 0.30, 0.20]       # spring, summer, autumn, winter
+  rain_persist: 0.55
+  fog_prob: [0.10, 0.03, 0.20, 0.10]
+  drought_prob_summer: 0.06                 # chance per summer day a drought starts
+  drought_days: [6, 14]
+  cold_snap_prob_winter: 0.05
+  cold_snap_days: [3, 7]
+  cold_snap_delta: -10.0
+
+disturbances:
+  fire_ignition_per_day: 0.04               # base; x4 in drought, x0 in rain
+  fire_spread_prob: 0.22
+  fire_burn_ticks: 30
+  flood_prob_per_spring_rain_day: 0.05
+  flood_days: [2, 5]
+  flood_radius: 4
+  famine_prob_per_year: 0.08                # a famine year: plant regrowth x0.25, fruit fails
+  famine_growth_mult: 0.25
+
+resources:
+  plant_growth_rate: 0.0045                 # logistic rate per tick at season multiplier 1
+  plant_seed_floor: 0.03
+  season_growth: [1.2, 1.0, 0.55, 0.05]     # spring, summer, autumn, winter
+  plant_bite: 0.25                          # biomass removed per EAT
+  plant_energy: 0.12                        # energy per unit biomass
+  fruit_tree_density: 0.012                 # per forest/meadow cell
+  fruit_max: 6
+  fruit_rate: 0.012                         # fruit/tick during the tree's fruiting season
+  fruit_energy: 0.15
+  fruit_rot: 0.003
+  wood_regrow: 0.0005
+  meat_decay: 0.0015                        # carcass spoilage per tick
+  meat_bite: 0.2
+  meat_energy: 1.0
+  rain_drink: 0.006                         # hydration from DRINK anywhere while it rains
+
+fauna:
+  small_prey:   {initial: 900, min: 200, max: 1600, energy: 0.30}
+  large_prey:   {initial: 120, min: 30,  max: 300,  energy: 1.8, min_attackers: 2, attack_window: 6}
+  predators:    {initial: 20,  min: 6,   max: 35,   damage: 0.08, attack_prob: 0.4}
+  flee_radius: 4
+  predator_sense: 6
+
+agents:
+  n_initial: 256
+  max_agents: 2048
+  view_radius: 5                            # (2r+1)^2 egocentric patch
+  night_view_radius: 2
+  fog_view_radius: 3
+  hearing_radius: 9
+  n_neighbors_obs: 4
+  history_len: 16                           # actions remembered per agent (reputation)
+  lifespan_years: [3.0, 4.0]                # heritable; ~11-15k ticks
+  maturity_years: 0.75
+  basal_cost: 0.0013                        # energy per tick
+  move_cost: 0.0009
+  carry_cost: 0.0004
+  rest_factor: 0.5
+  hydration_cost: 0.0016
+  heat_hydration_mult: 2.0
+  warmth_rate: 0.02
+  hunger_damage: 0.004                      # health per tick when energy==0 (same for hydration)
+  cold_damage: 0.003                        # when warmth < 0.2
+  fire_damage: 0.15
+  heal_rate: 0.002
+  drink_amount: 0.22
+  carry_capacity: 1.0
+  strike_damage: 0.15
+  n_genes: 8
+  mutation_std: 0.05
+  respawn: true                             # fixed-population mode (ignored when reproduction on)
+
+reproduction:
+  energy_threshold: 0.8
+  hydration_threshold: 0.6
+  cost: 0.4
+  cooldown_years: 0.25
+  min_age_years: 0.75
+
+reward:
+  setpoint: [1.0, 1.0, 1.0, 0.8]           # energy, hydration, health, warmth
+  death_penalty: -1.0
+  reproduction_bonus: 0.0
+
+capabilities:          # all off by default (HARD RULE 2)
+  memory: false                 # agent side (Stage 2)
+  world_model: false            # agent side (Stage 2)
+  social_learning: false        # agent side; env exposes neighbours' last actions when on
+  communication: false          # env: SIGNAL actions + heard-signal observation
+  n_symbols: 8
+  signal_cost: 0.0005
+  niche_construction: false     # env: BUILD action, material pickup
+  reproduction: false           # env: births/deaths with heritable genes
+  reputation: false             # env: neighbours' action-history summaries in obs
+  aggression: false             # env: STRIKE action (needed for punishment to be possible)
+  huddle_warmth: false          # ecology: adjacent bodies add warmth (biases aggregation; off by default)
+  cooperative_large_prey: true  # ecology: large prey need >= min_attackers in a window
+
+logging:
+  metrics_every: 50
+  events: true

@@ -1,0 +1,103 @@
+{
+  "machine": "macOS-26.6.2-arm64-arm-64bit",
+  "processor": "arm",
+  "python": "3.11.15",
+  "results": [
+    {
+      "world": "256x256",
+      "agents": 256,
+      "alive_end": 256,
+      "obs": false,
+      "steps": 3000,
+      "steps_per_s": 2997.9,
+      "steps_per_min": 179871,
+      "agent_steps_per_s": 767451,
+      "init_s": 0.91,
+      "fauna": 1907
+    },
+    {
+      "world": "256x256",
+      "agents": 256,
+      "alive_end": 256,
+      "obs": true,
+      "steps": 3000,
+      "steps_per_s": 1956.2,
+      "steps_per_min": 117371,
+      "agent_steps_per_s": 500782,
+      "init_s": 0.45,
+      "fauna": 1907
+    },
+    {
+      "world": "256x256",
+      "agents": 1000,
+      "alive_end": 1000,
+      "obs": false,
+      "steps": 3000,
+      "steps_per_s": 2071.8,
+      "steps_per_min": 124306,
+      "agent_steps_per_s": 2071775,
+      "init_s": 0.46,
+      "fauna": 1816
+    },
+    {
+      "world": "256x256",
+      "agents": 1000,
+      "alive_end": 1000,
+      "obs": true,
+      "steps": 3000,
+      "steps_per_s": 1197.8,
+      "steps_per_min": 71869,
+      "agent_steps_per_s": 1197819,
+      "init_s": 0.45,
+      "fauna": 1816
+    },
+    {
+      "world": "256x256",
+      "agents": 2000,
+      "alive_end": 2000,
+      "obs": false,
+      "steps": 3000,
+      "steps_per_s": 1572.2,
+      "steps_per_min": 94331,
+      "agent_steps_per_s": 3144371,
+      "init_s": 0.46,
+      "fauna": 276
+    },
+    {
+      "world": "256x256",
+      "agents": 2000,
+      "alive_end": 2000,
+      "obs": true,
+      "steps": 3000,
+      "steps_per_s": 565.2,
+      "steps_per_min": 33909,
+      "agent_steps_per_s": 1130303,
+      "init_s": 0.45,
+      "fauna": 276
+    },
+    {
+      "world": "512x512",
+      "agents": 1000,
+      "alive_end": 1000,
+      "obs": false,
+      "steps": 3000,
+      "steps_per_s": 1853.0,
+      "steps_per_min": 111181,
+      "agent_steps_per_s": 1853010,
+      "init_s": 1.91,
+      "fauna": 1907
+    },
+    {
+      "world": "512x512",
+      "agents": 1000,
+      "alive_end": 1000,
+      "obs": true,
+      "steps": 3000,
+      "steps_per_s": 773.8,
+      "steps_per_min": 46428,
+      "agent_steps_per_s": 773795,
+      "init_s": 1.89,
+      "fauna": 1907
+    }
+  ]
+}

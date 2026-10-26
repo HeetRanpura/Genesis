@@ -1,0 +1,38 @@
+# GENESIS agent log
+
+Running record of how agents are doing, newest last. Entries are appended by experiment scripts; numbers are measured, not estimated.
+
+## 2026-10-26 17:17 — Stage 1 baseline survival (SUPERSEDED: engine before simultaneous prey-update change; kept for history)
+
+Baselines, 5 seeds x 2.0 years, 256 agents, fixed population (respawn).
+
+| policy | deaths / agent-year (95% CI) | Kaplan-Meier survival at 1 yr (95% CI) |
+|---|---|---|
+| random | 3.05 [2.57, 3.55] | 0.016 [0.006, 0.029] |
+| greedy | 3.22 [2.54, 3.94] | 0.010 [0.003, 0.016] |
+| heuristic | 0.87 [0.69, 1.05] | 0.427 [0.326, 0.529] |
+
+Deaths by cause (summed over seeds): **random** {'starvation': 3255, 'thirst': 3150, 'cold': 807, 'fire': 209, 'predator': 384}; **greedy** {'starvation': 1493, 'thirst': 5092, 'cold': 1104, 'fire': 178, 'predator': 386}; **heuristic** {'starvation': 115, 'thirst': 705, 'cold': 382, 'fire': 82, 'predator': 899, 'old_age': 50}
+
+## 2026-10-26 17:28 — Stage 1 baseline survival
+
+Baselines, 5 seeds x 2.0 years, 256 agents, fixed population (respawn).
+
+| policy | deaths / agent-year (95% CI) | Kaplan-Meier survival at 1 yr (95% CI) |
+|---|---|---|
+| random | 3.07 [2.66, 3.53] | 0.016 [0.007, 0.024] |
+| greedy | 3.25 [2.62, 3.95] | 0.013 [0.004, 0.025] |
+| heuristic | 0.87 [0.69, 1.05] | 0.426 [0.329, 0.516] |
+
+Deaths by cause (summed over seeds): **random** {'starvation': 3243, 'thirst': 3221, 'cold': 825, 'fire': 237, 'predator': 327}; **greedy** {'starvation': 1490, 'thirst': 5152, 'cold': 1130, 'fire': 190, 'predator': 372}; **heuristic** {'starvation': 112, 'thirst': 665, 'cold': 413, 'fire': 82, 'predator': 894, 'old_age': 56}
+
+## 2026-10-26 17:35 — Stage 1 summary (written by hand)
+
+- No learning agents exist yet; only the three non-learning baselines have lived in the world.
+- Hand-written survival rules (heuristic) cut mortality ~3.5x vs random (0.87 vs 3.07 deaths per agent-year).
+  The world is survivable with competence, but not easy: even the heuristic loses ~57% of agents within a year.
+- Greedy forager is no better than random: it dies of thirst (64% of its deaths) because fresh water is usually
+  outside its 5-cell view and it has no memory. Prediction for Stage 2: memory/world-model agents should
+  gain most on water-finding. Recorded here *before* training so it can be checked.
+- Heuristic agents die mostly from predators (48%) and thirst (36%); cold deaths cluster in cold snaps.
+- No social behaviour is expected or observed from baselines (none of them has any social rule).

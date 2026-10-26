@@ -1,0 +1,20 @@
+[project]
+name = "genesis"
+version = "0.1.0"
+description = "Artificial-life testbed: survival-only RL agents in a foraging ecology"
+requires-python = ">=3.11"
+dependencies = ["numpy>=2.0", "numba>=0.60", "pyyaml", "scipy", "matplotlib", "gymnasium", "pettingzoo"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["sim*", "agents*", "analysis*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
