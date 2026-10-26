@@ -63,22 +63,34 @@ The world also starts with 400 small prey, 48 large prey and 12 predators, which
    - the director is basic (it cuts to events and follows a struggling agent)
 6. Test sessions from this session's screenshots are still in `runs/viewer/` (git-ignored). Delete them if you don't want them.
 
-## Stage 2: first slice done (2026-10-26). Read `reports/stage2/STAGE2_REPORT.md`
-- Recurrent PPO and a memoryless ablation, 20M agent-steps each, evaluated on held-out worlds 0–4. These first numbers
-  came from the former `agents/rppo.py` (kept in `reports/stage2/rppo_original/`); the unified PPOTrainer re-run of
-  the same protocol is in the report's "Reproduction" section.
-  - GRU learner: 1.80 [1.52, 2.10] deaths/agent-yr. Memoryless: 1.58 [1.35, 1.83]. Heuristic: 1.50 [1.04, 2.11].
-  - Both learners beat random and greedy. Neither is distinguishable from the heuristic yet.
-- The learners solved thirst, predators and fire, and now **starve**: energy intake roughly equals basal metabolism, they live on plants only, and they never hunt.
-- Memory cut thirst deaths but not overall mortality at this budget.
-- **Next:**
-  1. evaluate on held-out worlds periodically during training (the training curve is dominated by world and season cycles)
-  2. longer runs (100M+) with 3 training seeds per arm
-  3. an energy-economy check: can hunting or fruit ever pay? Report it; don't tune the world for the learner
-  4. Stage 3 social metrics on the learner recordings
-- Watch a learner live: `make viewer POLICY=ppo:gru_s0`. The inspector shows the network's
-  value estimate and action probabilities.
-- Disk: 29 GB free. Stage 2 recordings use about 6 GB (`runs/stage2*`). Each training run records every rollout (about 2 GB per 20M steps).
+## Stage 2: first slice done and replicated. Read `reports/stage2/STAGE2_REPORT.md` and `paper/main.pdf`
+- **One learner:** `agents/ppo.py` (PPOTrainer). `make train NAME=... [MEMORYLESS=1]`, `make eval NAME=...`.
+  Training logs a validation curve on worlds 500–502 (`val.jsonl`; not yet used in a run).
+- **Held-out results** (replication, 19.7M agent-steps each), in deaths per agent-year:
+
+  | agent | rate |
+  |---|---|
+  | memoryless | 1.50 [1.30, 1.75] |
+  | GRU | 1.67 [1.45, 1.92] |
+  | heuristic | 1.50 [1.04, 2.11] |
+  | random | 3.83 |
+  | greedy | 3.31 |
+
+  These match the original rppo numbers. H1 is supported; H2 and H3 are not; H4 (no social behaviour) holds.
+- **Why learners plateau:** they never learned to hunt, and starve in winter. The energy probe shows the world does
+  pay for hunting (plants alone are below basal metabolism), so this is a learning problem, not a world limit.
+- **Paper:** `paper/main.tex`, built with `tectonic -X compile paper/main.tex` (installed via Homebrew). The numbers
+  come from `paper/stats.json`, `reports/stage2/eval_*.json` and `reports/stage2/energy_economy.json`.
+- **Next** (by priority):
+  1. Longer runs (≥100M agent-steps, 3 seeds per arm) with `--val-every`. About 15–30 h of compute here, so
+     schedule overnight runs and watch the laptop's temperature.
+  2. Test whether hunting is an exploration problem (curriculum, an intrinsic-motivation ablation, or a world with
+     denser small prey as a probe, without changing the default world).
+  3. Stage 3 social metrics under the reproduction and communication switches.
+- **Disk:** about 7 GB free on Heet's Air. `runs/stage1_baselines` (2 GB) and `runs/stage2_eval` (2.2 GB) hold full
+  flight recordings and can be pruned if needed.
+- Watch a learner live: `make viewer POLICY=ppo:gru_s0`. The inspector shows the network's value estimate and
+  action probabilities.
 
 ## Gotchas that cost time (details in CLAUDE.md)
 - `env.tick` includes the spin-up. Subtract `env.spinup_ticks` for anything measured from the start of a run.

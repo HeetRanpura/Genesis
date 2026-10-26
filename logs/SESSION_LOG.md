@@ -110,3 +110,15 @@ remain in `runs/viewer/`; a safety check blocked a broad `rm`, so they were left
 - Original rppo evaluation files moved to `reports/stage2/rppo_original/`. Replication with PPOTrainer
   (`gru_s0`, `ff_s0`, seed 0, 600 iterations) is running; results go into the Stage 2 report.
 - 58 tests pass.
+
+## 2026-10-27 (Heet's machine): replication, energy economy, behaviour, paper
+- Merged PR #3 (Advik: articulated animated viewer, chase camera, frontend only).
+- Retrained `gru_s0` and `ff_s0` with the unified PPOTrainer (600 iterations each, about 1.0 h and 1.7 h on the M4
+  Air). Held-out evaluation replicates the rppo results (memoryless 1.50 [1.30, 1.75], GRU 1.67 [1.45, 1.92]).
+- Added `--val-every` validation worlds to training; diet probes `heuristic:{grazer,fruit,hunter}` (the standard
+  heuristic is unchanged bit-for-bit); `experiments/energy_economy.py`; `experiments/behaviour_analysis.py`;
+  `experiments/paper_figures.py`.
+- Wrote `paper/main.tex`, a NeurIPS-style preprint with TikZ diagrams, 12 pages, compiled with Tectonic.
+- Correction: earlier, in conversation, night-time resting was described as learned, based on one agent seen in the
+  viewer. The population analysis shows learners do **not** rest more at night.
+- Kept compute sequential (one job at a time) to avoid heat-throttling the fanless laptop.

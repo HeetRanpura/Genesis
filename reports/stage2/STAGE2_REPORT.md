@@ -78,3 +78,40 @@ A fixed-world evaluation every N iterations is needed (next step).
 
 Reproduce: `make train NAME=gru_s0`, `make train NAME=ff_s0 MEMORYLESS=1`, then `make eval NAME=...`, then
 `python experiments/plot_training.py gru_s0 ff_s0`.
+
+## Replication with the unified learner (2026-10-27)
+After `agents/rppo.py` was folded into PPOTrainer, both arms were retrained from scratch with the same protocol (seed
+0, 600 iterations × 128 ticks × 256 agents = 19.7M agent-steps, training worlds 1000+, MPS) and evaluated on the same
+held-out worlds 0–4 (`reports/stage2/eval_{gru,ff}_s0.json`; originals in `rppo_original/`).
+
+| learner | original (rppo) | replication (PPOTrainer) | g vs heuristic (replication) |
+|---|---|---|---|
+| memoryless | 1.58 [1.35, 1.83] | **1.50 [1.30, 1.75]** | +0.01 |
+| GRU | 1.80 [1.52, 2.10] | **1.67 [1.45, 1.92]** | +0.31 |
+
+All CIs overlap. The conclusions repeat:
+- **H1:** supported.
+- **H2:** not supported. The learners are not distinguishable from the heuristic (1.50 [1.04, 2.11]).
+- **H3:** not supported. Memory cuts thirst deaths (6% vs 10% of deaths) but does not lower overall mortality.
+- **Causes of death:** starvation is 76–77%.
+
+## Energy economy and behavioural anatomy (2026-10-27)
+- **Energy economy** (`experiments/energy_economy.py`, validation worlds 500–502). Hand-written foragers that differ
+  only in diet show that **plants alone cannot cover basal metabolism**: a grazer eats 3.9 energy per agent-year
+  against 5.0 basal, and dies at 3.12 deaths per agent-year. Hunting closes the gap (the hunter dies at 1.33, the mixed
+  heuristic at 1.24). Learners eat more over the year (6.4–6.7), but in the wrong seasons: about 2× the heuristic in
+  spring and summer, much of it wasted at the energy cap, and less than a fifth of it in winter (0.12–0.15 vs 0.71),
+  because they take almost no meat. Their diet is a local optimum; the world does pay for hunting.
+- **Behaviour** (`experiments/behaviour_analysis.py`, every agent and tick of test world 0):
+  - **Homeostatic control:** graded. P(drink) is 0.52 when parched and 0.09 when hydrated; eating is U-shaped.
+  - **Space use:** riverside sedentism. Learners stay a median 2.0–2.2 cells from water (heuristic 3.6) in 14–18-cell
+    home ranges (heuristic 38).
+  - **Daily rhythm:** none. Learners rest no more at night than at midday.
+  - **Value estimate:** tracks the drive, r = −0.65 (memoryless) and −0.75 (GRU).
+  - **Dawn:** the GRU policy sharpens (entropy 1.43 → 1.23).
+  - **Behavioural types:** no distinct types (silhouette 0.34–0.41).
+  - **Apparent clustering:** fully explained by shared place preference (NN ratio 0.84 against a habitat null,
+    0.98–1.01 against a place-preference null).
+  - **Social behaviour:** no group kills, and food transfer of under 0.01 energy per agent-year. **H4 holds.**
+- **Paper:** all of this is written up in `paper/main.pdf` (source `paper/main.tex`; figures via
+  `experiments/paper_figures.py` and `experiments/behaviour_analysis.py`).

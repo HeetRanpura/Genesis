@@ -70,12 +70,13 @@ def run(policy: str, seed: int, years: float, n: int, device: str) -> dict:
         if info["born"].any():
             pol.reset(info["born"])
     ay = exposure.sum() / env.year_len                       # agent-years
-    ay_season = exposure / env.year_len * 4                  # per agent-year *of that season's length*
+    ay_season = exposure / env.year_len * 4      # agent-years spent in each season, x4: per agent per season
     return dict(
         policy=policy, seed=seed, agent_years=ay, deaths_per_agent_year=deaths / ay,
         deaths_by_cause={k: int(v) for k, v in zip(DEATH_NAMES, env.deaths_by_cause - causes0) if v},
         intake_per_agent_year={s: float(v.sum() / ay) for s, v in intake.items()},
-        intake_per_agent_year_by_season={s: (v / np.maximum(ay_season, 1e-9)).round(3).tolist() for s, v in intake.items()},
+        intake_per_agent_per_season={s: (v / np.maximum(ay_season, 1e-9)).round(3).tolist()
+                                     for s, v in intake.items()},          # the four seasons sum to the yearly rate
         small_kills_per_agent_year=kills["small"] / ay, large_kills_per_agent_year=kills["large"] / ay,
         mean_energy=energy_sum / max(exposure.sum(), 1),
         basal_need_per_agent_year=float(cfg.agents.basal_cost * env.year_len))
@@ -88,8 +89,9 @@ def main():
     ap.add_argument("--agents", type=int, default=256)
     ap.add_argument("--learners", nargs="*", default=[], help="runs/stage2/<run> checkpoints to include")
     ap.add_argument("--device", default="mps")
+    ap.add_argument("--no-diets", action="store_true", help="only the learners (merged into an existing energy_economy.json)")
     a = ap.parse_args()
-    policies = DIETS + [f"ppo:{r}" for r in a.learners]
+    policies = ([] if a.no_diets else DIETS) + [f"ppo:{r}" for r in a.learners]
     rows = []
     for p in policies:
         for s in a.seeds:
@@ -99,12 +101,20 @@ def main():
             print(f"{p:18s} seed {s}: deaths/agent-yr {r['deaths_per_agent_year']:.2f}  intake {tot:.2f}/agent-yr "
                   f"(basal {r['basal_need_per_agent_year']:.1f})  {', '.join(f'{k} {v:.2f}' for k, v in r['intake_per_agent_year'].items())}"
                   f"  small kills {r['small_kills_per_agent_year']:.2f}/agent-yr  {r['deaths_by_cause']}", flush=True)
+    prev = ROOT / "reports" / "stage2" / "energy_economy.json"
+    if a.no_diets and prev.exists():          # keep earlier policies' rows, replace re-run ones
+        old = [r for r in json.loads(prev.read_text())["per_run"] if r["policy"] not in policies]
+        for r in old:                          # older files used a misleading key name for the same quantity
+            if "intake_per_agent_year_by_season" in r:
+                r["intake_per_agent_per_season"] = r.pop("intake_per_agent_year_by_season")
+        rows = old + rows
+        policies = list(dict.fromkeys([r["policy"] for r in old] + policies))
     summ = {}
     for p in policies:
         rr = [r for r in rows if r["policy"] == p]
         summ[p] = dict(deaths_per_agent_year=bootstrap_ci([r["deaths_per_agent_year"] for r in rr]),
                        intake_per_agent_year={s: float(np.mean([r["intake_per_agent_year"][s] for r in rr])) for s in SOURCES},
-                       intake_by_season={s: np.mean([r["intake_per_agent_year_by_season"][s] for r in rr], 0).round(3).tolist()
+                       intake_by_season={s: np.mean([r["intake_per_agent_per_season"][s] for r in rr], 0).round(3).tolist()
                                          for s in SOURCES},
                        small_kills_per_agent_year=float(np.mean([r["small_kills_per_agent_year"] for r in rr])),
                        starvation_share=float(np.mean([r["deaths_by_cause"].get("starvation", 0) / max(1, sum(r["deaths_by_cause"].values()))
@@ -129,7 +139,7 @@ def main():
     for i, p in enumerate(policies):
         tot = np.sum([summ[p]["intake_by_season"][s] for s in SOURCES], 0)
         ax[2].plot(SEASONS, tot, "o-", label=p)
-    ax[2].set(title="Energy eaten per agent-year, by season (all sources)", ylabel="energy units / agent-year")
+    ax[2].set(title="Energy eaten per agent per season (all sources)", ylabel="energy units per season")
     for a_ in ax[:2]:
         a_.set_xticks(x, [p.replace("heuristic:", "") for p in policies], rotation=20)
     for a_ in ax:

@@ -250,3 +250,71 @@ Re-ran `experiments/run_baselines.py --seeds 5 --years 2` (with the spin-up fix)
 All 15 runs (3 baselines × 5 held-out seeds) match the numbers committed from the MacBook Pro M3 Pro
 bit-for-bit (random 3.83, greedy 3.31, heuristic 1.50 deaths/agent-year). The simulator is
 reproducible across machines; learner training on MPS is not (see reports/stage2/STAGE2_REPORT.md).
+
+## 2026-10-27 00:22 — Stage 2 training: ff_s0
+
+PPOTrainer (memoryless), 256 agents, 600 iterations × 128 ticks (19,660,800 agent-steps), training worlds 1000+ (eval worlds 0-4 held out).
+- deaths/agent-yr during training: first 60 iters 2.04 → last 60 iters 1.07 (training-time rate with exploration; not an evaluation).
+- last-iteration causes: {'starvation': 1}; entropy 1.37.
+- logs: `runs/stage2/ff_s0/train.jsonl`, checkpoints in `runs/stage2/ff_s0/checkpoints/`.
+
+## 2026-10-27 00:24 — Energy economy: can hunting or fruit pay?
+
+Validation worlds [500, 501, 502] (not training, not test), 2 years, 256 agents. Hand-written foragers that differ only in what a hungry agent seeks; nothing in the world was changed.
+
+| policy | deaths / agent-yr (95% CI) | energy eaten / agent-yr (plants, fruit, meat) | small kills / agent-yr | starvation share |
+|---|---|---|---|---|
+| heuristic | 1.24 [0.84, 1.52] | 5.25 (3.23, 1.05, 0.97) | 2.76 | 7% |
+| heuristic:grazer | 3.12 [2.91, 3.54] | 3.89 (3.29, 0.55, 0.05) | 0.00 | 10% |
+| heuristic:fruit | 2.58 [2.14, 2.81] | 4.27 (2.76, 1.44, 0.08) | 0.00 | 9% |
+| heuristic:hunter | 1.33 [1.23, 1.49] | 5.21 (3.42, 0.49, 1.30) | 3.90 | 5% |
+Basal metabolism alone costs 5.0 energy per agent-year (before movement).
+
+## 2026-10-27 00:55 — Stage 2 evaluation: ff_s0
+
+Checkpoint `runs/stage2/ff_s0/checkpoints/last.pt`, 5 held-out seeds × 2.0 yr, 256 agents, sampled actions. Same protocol and statistics as `run_baselines.py`.
+
+| policy | deaths / agent-yr (95% CI) | Hedges' g (learner − baseline) |
+|---|---|---|
+| **learner (ff_s0)** | **1.50 [1.30, 1.75]** | |
+| random | 3.83 [3.53, 4.19] | -5.71 |
+| greedy | 3.31 [2.92, 3.77] | -3.78 |
+| heuristic | 1.50 [1.04, 2.11] | +0.01 |
+
+KM survival at 1 yr 0.100 [0.055, 0.148]; deaths by cause (summed) {'starvation': 2918, 'thirst': 373, 'cold': 531, 'fire': 18, 'old_age': 3, 'predator': 7}.
+Fully recorded: `runs/stage2_eval/ff_s0/s*/trajectory/`.
+
+## 2026-10-27 01:22 — Stage 2 training: gru_s0
+
+PPOTrainer (GRU), 256 agents, 600 iterations × 128 ticks (19,660,800 agent-steps), training worlds 1000+ (eval worlds 0-4 held out).
+- deaths/agent-yr during training: first 60 iters 2.09 → last 60 iters 1.26 (training-time rate with exploration; not an evaluation).
+- last-iteration causes: {'starvation': 1}; entropy 1.11.
+- logs: `runs/stage2/gru_s0/train.jsonl`, checkpoints in `runs/stage2/gru_s0/checkpoints/`.
+
+## 2026-10-27 01:27 — Stage 2 evaluation: gru_s0
+
+Checkpoint `runs/stage2/gru_s0/checkpoints/last.pt`, 5 held-out seeds × 2.0 yr, 256 agents, sampled actions. Same protocol and statistics as `run_baselines.py`.
+
+| policy | deaths / agent-yr (95% CI) | Hedges' g (learner − baseline) |
+|---|---|---|
+| **learner (gru_s0)** | **1.67 [1.45, 1.92]** | |
+| random | 3.83 [3.53, 4.19] | -5.23 |
+| greedy | 3.31 [2.92, 3.77] | -3.40 |
+| heuristic | 1.50 [1.04, 2.11] | +0.31 |
+
+KM survival at 1 yr 0.055 [0.023, 0.088]; deaths by cause (summed) {'starvation': 3310, 'thirst': 278, 'cold': 662, 'fire': 12, 'predator': 20, 'old_age': 1}.
+Fully recorded: `runs/stage2_eval/gru_s0/s*/trajectory/`.
+
+## 2026-10-27 01:32 — Energy economy: can hunting or fruit pay?
+
+Validation worlds [500, 501, 502] (not training, not test), 2 years, 256 agents. Hand-written foragers that differ only in what a hungry agent seeks; nothing in the world was changed.
+
+| policy | deaths / agent-yr (95% CI) | energy eaten / agent-yr (plants, fruit, meat) | small kills / agent-yr | starvation share |
+|---|---|---|---|---|
+| heuristic | 1.24 [0.84, 1.52] | 5.25 (3.23, 1.05, 0.97) | 2.76 | 7% |
+| heuristic:grazer | 3.12 [2.91, 3.54] | 3.89 (3.29, 0.55, 0.05) | 0.00 | 10% |
+| heuristic:fruit | 2.58 [2.14, 2.81] | 4.27 (2.76, 1.44, 0.08) | 0.00 | 9% |
+| heuristic:hunter | 1.33 [1.23, 1.49] | 5.21 (3.42, 0.49, 1.30) | 3.90 | 5% |
+| ppo:ff_s0 | 1.36 [1.21, 1.45] | 6.44 (4.66, 1.49, 0.30) | 0.00 | 75% |
+| ppo:gru_s0 | 1.48 [1.29, 1.64] | 6.66 (4.86, 1.56, 0.24) | 0.03 | 77% |
+Basal metabolism alone costs 5.0 energy per agent-year (before movement).

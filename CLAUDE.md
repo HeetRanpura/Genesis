@@ -96,6 +96,9 @@ reward, and how does its order of emergence compare with human prehistory (as st
 - Stage 1.1 (2026-10-26): fauna made food-limited (caps never bind), observation path rewritten
   (incremental obs image, static line-of-sight masks, fused world_tick) -> >=100k steps/min with obs at
   1,000 agents even when throttled. 41 tests. Awaiting user review before Stage 2.
+- Stage 2 first slice (2026-10-27): single learner (PPOTrainer), replicated held-out results (memoryless 1.50, GRU
+  1.67 deaths/agent-yr; heuristic 1.50), energy-economy probe (hunting pays; learners don't hunt), behavioural
+  anatomy, and a NeurIPS-style write-up in `paper/` (`tectonic -X compile paper/main.tex`). 59 tests.
 - Session 3 (2026-10-26): live three.js viewer (Stage 5 first slice; `make viewer`, docs/VIEWER.md); fixed the
   survival-analysis spin-up bug (baselines corrected: random 3.83 / greedy 3.31 / heuristic 1.50 deaths/agent-yr);
   density sweep shows water-seeking baselines collapse at 1,000 agents (heuristic 4.94, worse than random). 43 tests.

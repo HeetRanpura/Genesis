@@ -1,0 +1,48 @@
+% TikZ diagrams for the GENESIS paper (included from main.tex)
+
+\newcommand{\systemdiagram}{%
+\begin{tikzpicture}[font=\scriptsize, >=Stealth,
+  box/.style={draw, rounded corners=2pt, align=center, minimum height=8mm, inner sep=3pt, fill=##1},
+  box/.default=white, lab/.style={font=\tiny, align=center, text=black!70}]
+  \node[box=green!8, minimum width=31mm] (world) {\textbf{World engine} (Numba)\\ 256$\times$256 island, seasons,\\ weather, fire/flood, fauna};
+  \node[box=blue!6, right=12mm of world, minimum width=27mm] (obs) {\textbf{Egocentric perception}\\ 11$\times$11$\times$16 view (occluded)\\ + 13 body signals};
+  \node[box=orange!10, right=12mm of obs, minimum width=28mm] (pol) {\textbf{Shared policy}\\ conv $\rightarrow$ GRU / MLP\\ one network, 256 bodies};
+  \draw[->, thick] (world) -- node[lab, above]{state} (obs);
+  \draw[->, thick] (obs) -- node[lab, above]{$o_t^i$} (pol);
+  \draw[->, thick] (pol.south) -- ++(0,-6mm) -| node[lab, pos=0.25, below]{actions $a_t^i$ (move, eat, drink, rest, hunt, \dots)} (world.south);
+  \node[box=red!6, above=7mm of obs, minimum width=56mm] (rew) {\textbf{Reward = own homeostasis only}: $r_t^i = D(h_t^i) - D(h_{t+1}^i) - \mathbf{1}[\text{death}]$};
+  \draw[->, dashed] (world.north) |- (rew.west);
+  \draw[->, dashed] (rew.east) -| (pol.north);
+  \node[box=gray!8, below=14mm of obs, minimum width=56mm] (rec) {\textbf{Flight recorder}: every agent, every tick (position, body, action,\\ reward, death cause, value, action probabilities) $\rightarrow$ exact replay \& analysis};
+  \draw[->, gray] (world.south) ++(-6mm,0) |- (rec.west);
+\end{tikzpicture}}
+
+\newcommand{\networkdiagram}{%
+\begin{tikzpicture}[font=\scriptsize, >=Stealth, node distance=4mm,
+  l/.style={draw, rounded corners=1.5pt, minimum height=6mm, align=center, inner sep=2pt, fill=##1}, l/.default=white]
+  \node[l=blue!6] (g) {grid $11{\times}11{\times}16$};
+  \node[l, right=of g] (c1) {conv 3$\times$3, 32};
+  \node[l, right=of c1] (c2) {conv 3$\times$3/2, 64};
+  \node[l, right=of c2] (fg) {fc 256};
+  \node[l=blue!6, below=5mm of g] (v) {self 13 + nbrs 36 + heard 8};
+  \node[l, right=of v, xshift=19mm] (fv) {fc 64};
+  \node[l, right=12mm of fg, yshift=-5.5mm] (fc) {fc 256};
+  \node[l=orange!12, right=of fc] (core) {GRU 256\\ \tiny (or MLP)};
+  \node[l=green!10, right=of core, yshift=3.5mm] (pi) {$\pi(a\mid h)$, 11};
+  \node[l=green!10, right=of core, yshift=-3.5mm] (vv) {$V(h)$};
+  \draw[->] (g)--(c1); \draw[->] (c1)--(c2); \draw[->] (c2)--(fg); \draw[->] (v)--(fv);
+  \draw[->] (fg.east)--(fc); \draw[->] (fv.east)--(fc); \draw[->] (fc)--(core);
+  \draw[->] (core)--(pi); \draw[->] (core)--(vv);
+  \draw[->, densely dotted] (core.south) -- ++(0,-4mm) -- ++(-7mm,0) node[below, font=\tiny]{$h_{t-1}$, reset at birth} -- ++(-0mm,0) |- (core.west);
+\end{tikzpicture}}
+
+\newcommand{\protocoldiagram}{%
+\begin{tikzpicture}[font=\scriptsize, >=Stealth,
+  s/.style={draw, rounded corners=2pt, minimum width=34mm, minimum height=7mm, align=center, fill=##1}]
+  \node[s=green!8] (tr) {\textbf{Training worlds}\\ seeds $1000{+}100k{+}w$, new world / 40 it.};
+  \node[s=yellow!12, right=6mm of tr] (va) {\textbf{Validation worlds}\\ seeds 500--502 (probes, curves)};
+  \node[s=red!8, right=6mm of va] (te) {\textbf{Held-out test worlds}\\ seeds 0--4 (all reported claims)};
+  \node[draw, dashed, rounded corners, fit=(tr)(va)(te), inner sep=3pt, label={[font=\tiny]above:same generator, disjoint seeds}] {};
+  \node[below=5mm of va, font=\tiny, align=center] {hypotheses preregistered before evaluation $\cdot$ 5 seeds $\times$ 2 years $\times$ 256 agents $\cdot$
+  bootstrap 95\% CIs + Hedges' $g$};
+\end{tikzpicture}}

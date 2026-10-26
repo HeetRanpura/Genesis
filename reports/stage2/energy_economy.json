@@ -1,0 +1,997 @@
+{
+  "args": {
+    "seeds": [
+      500,
+      501,
+      502
+    ],
+    "years": 2.0,
+    "agents": 256,
+    "learners": [
+      "ff_s0",
+      "gru_s0"
+    ],
+    "device": "mps",
+    "no_diets": true
+  },
+  "per_run": [
+    {
+      "policy": "heuristic",
+      "seed": 500,
+      "agent_years": 512.0,
+      "deaths_per_agent_year": 1.515625,
+      "deaths_by_cause": {
+        "starvation": 54,
+        "thirst": 286,
+        "cold": 112,
+        "fire": 14,
+        "predator": 305,
+        "old_age": 5
+      },
+      "intake_per_agent_year": {
+        "plants": 3.4702087656142164,
+        "fruit": 0.867187500000006,
+        "meat / carried food": 0.7010312596979957
+      },
+      "small_kills_per_agent_year": 2.462890625,
+      "large_kills_per_agent_year": 0.0,
+      "mean_energy": 0.6485929413621003,
+      "basal_need_per_agent_year": 4.992,
+      "intake_per_agent_per_season": {
+        "plants": [
+          0.645,
+          1.35,
+          1.052,
+          0.422
+        ],
+        "fruit": [
+          0.26,
+          0.231,
+          0.284,
+          0.092
+        ],
+        "meat / carried food": [
+          0.125,
+          0.084,
+          0.24,
+          0.252
+        ]
+      }
+    },
+    {
+      "policy": "heuristic",
+      "seed": 501,
+      "agent_years": 512.0,
+      "deaths_per_agent_year": 0.83984375,
+      "deaths_by_cause": {
+        "starvation": 28,
+        "thirst": 229,
+        "cold": 16,
+        "fire": 16,
+        "predator": 131,
+        "old_age": 10
+      },
+      "intake_per_agent_year": {
+        "plants": 3.7005782269342986,
+        "fruit": 1.1399414062500113,
+        "meat / carried food": 0.7396093620267518
+      },
+      "small_kills_per_agent_year": 1.798828125,
+      "large_kills_per_agent_year": 0.0,
+      "mean_energy": 0.6864326221984811,
+      "basal_need_per_agent_year": 4.992,
+      "intake_per_agent_per_season": {
+        "plants": [
+          1.031,
+          1.193,
+          0.941,
+          0.536
+        ],
+        "fruit": [
+          0.382,
+          0.288,
+          0.348,
+          0.122
+        ],
+        "meat / carried food": [
+          0.109,
+          0.107,
+          0.296,
+          0.228
+        ]
+      }
+    },
+    {
+      "policy": "heuristic",
+      "seed": 502,
+      "agent_years": 512.0,
+      "deaths_per_agent_year": 1.357421875,
+      "deaths_by_cause": {
+        "starvation": 56,
+        "thirst": 203,
+        "cold": 165,
+        "fire": 20,
+        "predator": 245,
+        "old_age": 6
+      },
+      "intake_per_agent_year": {
+        "plants": 2.5096428716453243,
+        "fruit": 1.135839843750011,
+        "meat / carried food": 1.4769139882995623
+      },
+      "small_kills_per_agent_year": 4.005859375,
+      "large_kills_per_agent_year": 0.0,
+      "mean_energy": 0.6633522859192453,
+      "basal_need_per_agent_year": 4.992,
+      "intake_per_agent_per_season": {
+        "plants": [
+          0.812,
+          0.932,
+          0.601,
+          0.165
+        ],
+        "fruit": [
+          0.36,
+          0.315,
+          0.389,
+          0.071
+        ],
+        "meat / carried food": [
+          0.323,
+          0.339,
+          0.561,
+          0.255
+        ]
+      }
+    },
+    {
+      "policy": "heuristic:grazer",
+      "seed": 500,
+      "agent_years": 512.0,
+      "deaths_per_agent_year": 2.9140625,
+      "deaths_by_cause": {
+        "starvation": 184,
+        "thirst": 751,
+        "cold": 118,
+        "fire": 12,
+        "predator": 427
+      },
+      "intake_per_agent_year": {
+        "plants": 3.4431377437384767,
+        "fruit": 0.4458984374999995,
+        "meat / carried food": 0.011718741328513714
+      },
+      "small_kills_per_agent_year": 0.0,
+      "large_kills_per_agent_year": 0.0,
+      "mean_energy": 0.5430146925384178,
+      "basal_need_per_agent_year": 4.992,
+      "intake_per_agent_per_season": {
+        "plants": [
+          0.752,
+          1.395,
+          0.981,
+          0.314
+        ],
+        "fruit": [
+          0.1,
+          0.159,
+          0.145,
+          0.042
+        ],
+        "meat / carried food": [
+          0.003,
+          0.001,
+          0.005,
+          0.003
+        ]
+      }
+    },
+    {
+      "policy": "heuristic:grazer",
+      "seed": 501,
+      "agent_years": 512.0,
+      "deaths_per_agent_year": 2.9140625,
+      "deaths_by_cause": {
+        "starvation": 119,
+        "thirst": 774,
+        "cold": 21,
+        "fire": 30,
+        "predator": 548
+      },
+      "intake_per_agent_year": {
+        "plants": 3.59013059682562,
+        "fruit": 0.6325195312500024,
+        "meat / carried food": 0.09621088431922534
+      },
+      "small_kills_per_agent_year": 0.0,
+      "large_kills_per_agent_year": 0.0,
+      "mean_energy": 0.5697949682110145,
+      "basal_need_per_agent_year": 4.992,
+      "intake_per_agent_per_season": {
+        "plants": [
+          0.886,
+          1.314,
+          1.005,
+          0.386
+        ],
+        "fruit": [
+          0.151,
+          0.212,
+          0.22,
+          0.05
+        ],
+        "meat / carried food": [
+          0.011,
+          0.044,
+          0.033,
+          0.008
+        ]
+      }
+    },
+    {
+      "policy": "heuristic:grazer",
+      "seed": 502,
+      "agent_years": 512.0,
+      "deaths_per_agent_year": 3.53515625,
+      "deaths_by_cause": {
+        "starvation": 182,
+        "thirst": 907,
+        "cold": 193,
+        "fire": 13,
+        "predator": 514,
+        "old_age": 1
+      },
+      "intake_per_agent_year": {
+        "plants": 2.8290971369273024,
+        "fruit": 0.5721679687500015,
+        "meat / carried food": 0.03504686101587139
+      },
+      "small_kills_per_agent_year": 0.0,
+      "large_kills_per_agent_year": 0.0,
+      "mean_energy": 0.5115070976006488,
+      "basal_need_per_agent_year": 4.992,
+      "intake_per_agent_per_season": {
+        "plants": [
+          0.835,
+          1.173,
+          0.632,
+          0.189
+        ],
+        "fruit": [
+          0.175,
+          0.238,
+          0.129,
+          0.03
+        ],
+        "meat / carried food": [
+          0.0,
+          0.022,
+          0.009,
+          0.004
+        ]
+      }
+    },
+    {
+      "policy": "heuristic:fruit",
+      "seed": 500,
+      "agent_years": 512.0,
+      "deaths_per_agent_year": 2.140625,
+      "deaths_by_cause": {
+        "starvation": 112,
+        "thirst": 649,
+        "cold": 112,
+        "fire": 25,
+        "predator": 196,
+        "old_age": 2
+      },
+      "intake_per_agent_year": {
+        "plants": 3.1542724607577055,
+        "fruit": 1.151367187500012,
+        "meat / carried food": 0.04901560451944533
+      },
+      "small_kills_per_agent_year": 0.0,
+      "large_kills_per_agent_year": 0.0,
+      "mean_energy": 0.5700668521147843,
+      "basal_need_per_agent_year": 4.992,
+      "intake_per_agent_per_season": {
+        "plants": [
+          0.707,
+          1.229,
+          0.849,
+          0.369
+        ],
+        "fruit": [
+          0.286,
+          0.357,
+          0.44,
+          0.068
+        ],
+        "meat / carried food": [
+          0.008,
+          0.019,
+          0.02,
+          0.002
+        ]
+      }
+    },
+    {
+      "policy": "heuristic:fruit",
+      "seed": 501,
+      "agent_years": 512.0,
+      "deaths_per_agent_year": 2.806640625,
+      "deaths_by_cause": {
+        "starvation": 125,
+        "thirst": 788,
+        "cold": 21,
+        "fire": 23,
+        "predator": 480
+      },
+      "intake_per_agent_year": {
+        "plants": 2.8095390122440547,
+        "fruit": 1.53662109375001,
+        "meat / carried food": 0.14725776231643953
+      },
+      "small_kills_per_agent_year": 0.0,
+      "large_kills_per_agent_year": 0.0,
+      "mean_energy": 0.5657273758590843,
+      "basal_need_per_agent_year": 4.992,
+      "intake_per_agent_per_season": {
+        "plants": [
+          0.842,
+          1.18,
+          0.663,
+          0.126
+        ],
+        "fruit": [
+          0.457,
+          0.386,
+          0.619,
+          0.074
+        ],
+        "meat / carried food": [
+          0.023,
+          0.049,
+          0.051,
+          0.025
+        ]
+      }
+    },
+    {
+      "policy": "heuristic:fruit",
+      "seed": 502,
+      "agent_years": 512.0,
+      "deaths_per_agent_year": 2.796875,
+      "deaths_by_cause": {
+        "starvation": 123,
+        "thirst": 894,
+        "cold": 180,
+        "fire": 37,
+        "predator": 198
+      },
+      "intake_per_agent_year": {
+        "plants": 2.3069128184041645,
+        "fruit": 1.6198242187500138,
+        "meat / carried food": 0.046992158081775384
+      },
+      "small_kills_per_agent_year": 0.0,
+      "large_kills_per_agent_year": 0.0,
+      "mean_energy": 0.5306599624920636,
+      "basal_need_per_agent_year": 4.992,
+      "intake_per_agent_per_season": {
+        "plants": [
+          0.785,
+          1.007,
+          0.455,
+          0.059
+        ],
+        "fruit": [
+          0.494,
+          0.513,
+          0.56,
+          0.052
+        ],
+        "meat / carried food": [
+          0.005,
+          0.007,
+          0.032,
+          0.003
+        ]
+      }
+    },
+    {
+      "policy": "heuristic:hunter",
+      "seed": 500,
+      "agent_years": 512.0,
+      "deaths_per_agent_year": 1.4921875,
+      "deaths_by_cause": {
+        "starvation": 42,
+        "thirst": 323,
+        "cold": 93,
+        "fire": 8,
+        "predator": 294,
+        "old_age": 4
+      },
+      "intake_per_agent_year": {
+        "plants": 3.5500295075149135,
+        "fruit": 0.452050781249999,
+        "meat / carried food": 1.0126093924034656
+      },
+      "small_kills_per_agent_year": 3.548828125,
+      "large_kills_per_agent_year": 0.0,
+      "mean_energy": 0.645082805499745,
+      "basal_need_per_agent_year": 4.992,
+      "intake_per_agent_per_season": {
+        "plants": [
+          0.851,
+          1.218,
+          1.005,
+          0.475
+        ],
+        "fruit": [
+          0.11,
+          0.131,
+          0.161,
+          0.05
+        ],
+        "meat / carried food": [
+          0.124,
+          0.271,
+          0.417,
+          0.2
+        ]
+      }
+    },
+    {
+      "policy": "heuristic:hunter",
+      "seed": 501,
+      "agent_years": 512.0,
+      "deaths_per_agent_year": 1.267578125,
+      "deaths_by_cause": {
+        "starvation": 30,
+        "thirst": 317,
+        "cold": 11,
+        "fire": 1,
+        "predator": 288,
+        "old_age": 2
+      },
+      "intake_per_agent_year": {
+        "plants": 3.6062283982853787,
+        "fruit": 0.5583984375000012,
+        "meat / carried food": 1.2164453064633574
+      },
+      "small_kills_per_agent_year": 3.603515625,
+      "large_kills_per_agent_year": 0.001953125,
+      "mean_energy": 0.6699637930316384,
+      "basal_need_per_agent_year": 4.992,
+      "intake_per_agent_per_season": {
+        "plants": [
+          0.953,
+          1.151,
+          0.968,
+          0.535
+        ],
+        "fruit": [
+          0.136,
+          0.166,
+          0.185,
+          0.072
+        ],
+        "meat / carried food": [
+          0.278,
+          0.289,
+          0.419,
+          0.232
+        ]
+      }
+    },
+    {
+      "policy": "heuristic:hunter",
+      "seed": 502,
+      "agent_years": 512.0,
+      "deaths_per_agent_year": 1.23046875,
+      "deaths_by_cause": {
+        "starvation": 36,
+        "thirst": 254,
+        "cold": 124,
+        "fire": 14,
+        "predator": 196,
+        "old_age": 6
+      },
+      "intake_per_agent_year": {
+        "plants": 3.0933598031003857,
+        "fruit": 0.45556640624999917,
+        "meat / carried food": 1.6824139774635043
+      },
+      "small_kills_per_agent_year": 4.533203125,
+      "large_kills_per_agent_year": 0.0,
+      "mean_energy": 0.6612267977189428,
+      "basal_need_per_agent_year": 4.992,
+      "intake_per_agent_per_season": {
+        "plants": [
+          0.953,
+          1.026,
+          0.749,
+          0.366
+        ],
+        "fruit": [
+          0.137,
+          0.142,
+          0.134,
+          0.042
+        ],
+        "meat / carried food": [
+          0.351,
+          0.433,
+          0.642,
+          0.256
+        ]
+      }
+    },
+    {
+      "policy": "ppo:ff_s0",
+      "seed": 500,
+      "agent_years": 512.0,
+      "deaths_per_agent_year": 1.431640625,
+      "deaths_by_cause": {
+        "starvation": 501,
+        "thirst": 103,
+        "cold": 124,
+        "predator": 5
+      },
+      "intake_per_agent_year": {
+        "plants": 5.0754044201582325,
+        "fruit": 1.2389648437500134,
+        "meat / carried food": 0.27166015944312694
+      },
+      "intake_per_agent_per_season": {
+        "plants": [
+          1.303,
+          2.803,
+          0.901,
+          0.069
+        ],
+        "fruit": [
+          0.333,
+          0.483,
+          0.379,
+          0.044
+        ],
+        "meat / carried food": [
+          0.118,
+          0.062,
+          0.07,
+          0.021
+        ]
+      },
+      "small_kills_per_agent_year": 0.00390625,
+      "large_kills_per_agent_year": 0.0,
+      "mean_energy": 0.6139947108846778,
+      "basal_need_per_agent_year": 4.992
+    },
+    {
+      "policy": "ppo:ff_s0",
+      "seed": 501,
+      "agent_years": 512.0,
+      "deaths_per_agent_year": 1.212890625,
+      "deaths_by_cause": {
+        "starvation": 568,
+        "thirst": 39,
+        "cold": 7,
+        "fire": 1,
+        "predator": 5,
+        "old_age": 1
+      },
+      "intake_per_agent_year": {
+        "plants": 4.608306889898448,
+        "fruit": 1.6417968750000103,
+        "meat / carried food": 0.3473554691114264
+      },
+      "intake_per_agent_per_season": {
+        "plants": [
+          1.758,
+          2.285,
+          0.522,
+          0.043
+        ],
+        "fruit": [
+          0.473,
+          0.65,
+          0.465,
+          0.053
+        ],
+        "meat / carried food": [
+          0.136,
+          0.092,
+          0.089,
+          0.031
+        ]
+      },
+      "small_kills_per_agent_year": 0.001953125,
+      "large_kills_per_agent_year": 0.0,
+      "mean_energy": 0.6055364652924861,
+      "basal_need_per_agent_year": 4.992
+    },
+    {
+      "policy": "ppo:ff_s0",
+      "seed": 502,
+      "agent_years": 512.0,
+      "deaths_per_agent_year": 1.447265625,
+      "deaths_by_cause": {
+        "starvation": 493,
+        "thirst": 85,
+        "cold": 156,
+        "fire": 4,
+        "predator": 3
+      },
+      "intake_per_agent_year": {
+        "plants": 4.291916432730941,
+        "fruit": 1.5758789062500078,
+        "meat / carried food": 0.27913672977447285
+      },
+      "intake_per_agent_per_season": {
+        "plants": [
+          1.551,
+          2.262,
+          0.434,
+          0.045
+        ],
+        "fruit": [
+          0.49,
+          0.632,
+          0.419,
+          0.035
+        ],
+        "meat / carried food": [
+          0.075,
+          0.094,
+          0.093,
+          0.017
+        ]
+      },
+      "small_kills_per_agent_year": 0.005859375,
+      "large_kills_per_agent_year": 0.0,
+      "mean_energy": 0.6062144293022963,
+      "basal_need_per_agent_year": 4.992
+    },
+    {
+      "policy": "ppo:gru_s0",
+      "seed": 500,
+      "agent_years": 512.0,
+      "deaths_per_agent_year": 1.521484375,
+      "deaths_by_cause": {
+        "starvation": 558,
+        "thirst": 42,
+        "cold": 174,
+        "fire": 1,
+        "predator": 3,
+        "old_age": 1
+      },
+      "intake_per_agent_year": {
+        "plants": 5.720694130326808,
+        "fruit": 1.3180664062500134,
+        "meat / carried food": 0.25393749783070263
+      },
+      "intake_per_agent_per_season": {
+        "plants": [
+          1.379,
+          3.06,
+          1.138,
+          0.144
+        ],
+        "fruit": [
+          0.343,
+          0.502,
+          0.445,
+          0.028
+        ],
+        "meat / carried food": [
+          0.107,
+          0.029,
+          0.097,
+          0.022
+        ]
+      },
+      "small_kills_per_agent_year": 0.015625,
+      "large_kills_per_agent_year": 0.0,
+      "mean_energy": 0.6024980342209649,
+      "basal_need_per_agent_year": 4.992
+    },
+    {
+      "policy": "ppo:gru_s0",
+      "seed": 501,
+      "agent_years": 512.0,
+      "deaths_per_agent_year": 1.294921875,
+      "deaths_by_cause": {
+        "starvation": 597,
+        "thirst": 22,
+        "cold": 40,
+        "fire": 1,
+        "predator": 2,
+        "old_age": 1
+      },
+      "intake_per_agent_year": {
+        "plants": 4.612092050034552,
+        "fruit": 1.7261718750000092,
+        "meat / carried food": 0.2674296983757816
+      },
+      "intake_per_agent_per_season": {
+        "plants": [
+          1.762,
+          2.263,
+          0.501,
+          0.086
+        ],
+        "fruit": [
+          0.493,
+          0.667,
+          0.508,
+          0.057
+        ],
+        "meat / carried food": [
+          0.134,
+          0.056,
+          0.059,
+          0.018
+        ]
+      },
+      "small_kills_per_agent_year": 0.02734375,
+      "large_kills_per_agent_year": 0.0,
+      "mean_energy": 0.5865952222142369,
+      "basal_need_per_agent_year": 4.992
+    },
+    {
+      "policy": "ppo:gru_s0",
+      "seed": 502,
+      "agent_years": 512.0,
+      "deaths_per_agent_year": 1.63671875,
+      "deaths_by_cause": {
+        "starvation": 577,
+        "thirst": 54,
+        "cold": 200,
+        "fire": 3,
+        "predator": 4
+      },
+      "intake_per_agent_year": {
+        "plants": 4.241558673099936,
+        "fruit": 1.632128906250008,
+        "meat / carried food": 0.21125000685060508
+      },
+      "intake_per_agent_per_season": {
+        "plants": [
+          1.572,
+          2.283,
+          0.346,
+          0.04
+        ],
+        "fruit": [
+          0.509,
+          0.669,
+          0.42,
+          0.034
+        ],
+        "meat / carried food": [
+          0.055,
+          0.076,
+          0.063,
+          0.018
+        ]
+      },
+      "small_kills_per_agent_year": 0.033203125,
+      "large_kills_per_agent_year": 0.0,
+      "mean_energy": 0.5890249300282449,
+      "basal_need_per_agent_year": 4.992
+    }
+  ],
+  "summary": {
+    "heuristic": {
+      "deaths_per_agent_year": [
+        1.2376302083333333,
+        0.83984375,
+        1.515625
+      ],
+      "intake_per_agent_year": {
+        "plants": 3.22680995473128,
+        "fruit": 1.0476562500000093,
+        "meat / carried food": 0.9725182033414366
+      },
+      "intake_by_season": {
+        "plants": [
+          0.829,
+          1.158,
+          0.865,
+          0.374
+        ],
+        "fruit": [
+          0.334,
+          0.278,
+          0.34,
+          0.095
+        ],
+        "meat / carried food": [
+          0.186,
+          0.177,
+          0.366,
+          0.245
+        ]
+      },
+      "small_kills_per_agent_year": 2.755859375,
+      "starvation_share": 0.07175981583469739,
+      "mean_energy": 0.6661259498266089
+    },
+    "heuristic:grazer": {
+      "deaths_per_agent_year": [
+        3.12109375,
+        2.9140625,
+        3.53515625
+      ],
+      "intake_per_agent_year": {
+        "plants": 3.2874551591637995,
+        "fruit": 0.5501953125000011,
+        "meat / carried food": 0.04765882888787015
+      },
+      "intake_by_season": {
+        "plants": [
+          0.824,
+          1.294,
+          0.873,
+          0.296
+        ],
+        "fruit": [
+          0.142,
+          0.203,
+          0.165,
+          0.041
+        ],
+        "meat / carried food": [
+          0.005,
+          0.022,
+          0.016,
+          0.005
+        ]
+      },
+      "small_kills_per_agent_year": 0.0,
+      "starvation_share": 0.10121186536913879,
+      "mean_energy": 0.5414389194500271
+    },
+    "heuristic:fruit": {
+      "deaths_per_agent_year": [
+        2.5813802083333335,
+        2.140625,
+        2.806640625
+      ],
+      "intake_per_agent_year": {
+        "plants": 2.7569080971353084,
+        "fruit": 1.435937500000012,
+        "meat / carried food": 0.08108850830588675
+      },
+      "intake_by_season": {
+        "plants": [
+          0.778,
+          1.139,
+          0.656,
+          0.185
+        ],
+        "fruit": [
+          0.412,
+          0.419,
+          0.54,
+          0.065
+        ],
+        "meat / carried food": [
+          0.012,
+          0.025,
+          0.034,
+          0.01
+        ]
+      },
+      "small_kills_per_agent_year": 0.0,
+      "starvation_share": 0.09169013792674789,
+      "mean_energy": 0.5554847301553106
+    },
+    "heuristic:hunter": {
+      "deaths_per_agent_year": [
+        1.330078125,
+        1.23046875,
+        1.4921875
+      ],
+      "intake_per_agent_year": {
+        "plants": 3.416539236300226,
+        "fruit": 0.4886718749999998,
+        "meat / carried food": 1.303822892110109
+      },
+      "intake_by_season": {
+        "plants": [
+          0.919,
+          1.132,
+          0.907,
+          0.459
+        ],
+        "fruit": [
+          0.128,
+          0.146,
+          0.16,
+          0.055
+        ],
+        "meat / carried food": [
+          0.251,
+          0.331,
+          0.493,
+          0.229
+        ]
+      },
+      "small_kills_per_agent_year": 3.8951822916666665,
+      "starvation_share": 0.05278054687052824,
+      "mean_energy": 0.6587577987501086
+    },
+    "ppo:ff_s0": {
+      "deaths_per_agent_year": [
+        1.3639322916666667,
+        1.212890625,
+        1.447265625
+      ],
+      "intake_per_agent_year": {
+        "plants": 4.658542580929207,
+        "fruit": 1.4855468750000105,
+        "meat / carried food": 0.29938411944300874
+      },
+      "intake_by_season": {
+        "plants": [
+          1.537,
+          2.45,
+          0.619,
+          0.052
+        ],
+        "fruit": [
+          0.432,
+          0.588,
+          0.421,
+          0.044
+        ],
+        "meat / carried food": [
+          0.11,
+          0.083,
+          0.084,
+          0.023
+        ]
+      },
+      "small_kills_per_agent_year": 0.00390625,
+      "starvation_share": 0.7544878066032367,
+      "mean_energy": 0.6085818684931534
+    },
+    "ppo:gru_s0": {
+      "deaths_per_agent_year": [
+        1.484375,
+        1.294921875,
+        1.63671875
+      ],
+      "intake_per_agent_year": {
+        "plants": 4.858114951153765,
+        "fruit": 1.5587890625000103,
+        "meat / carried food": 0.24420573435236315
+      },
+      "intake_by_season": {
+        "plants": [
+          1.571,
+          2.535,
+          0.662,
+          0.09
+        ],
+        "fruit": [
+          0.448,
+          0.613,
+          0.458,
+          0.04
+        ],
+        "meat / carried food": [
+          0.099,
+          0.054,
+          0.073,
+          0.019
+        ]
+      },
+      "small_kills_per_agent_year": 0.025390625,
+      "starvation_share": 0.7684331979785407,
+      "mean_energy": 0.5927060621544822
+    }
+  }
+}
