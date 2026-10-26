@@ -26,7 +26,9 @@ reward, and how does its order of emergence compare with human prehistory (as st
   `layout.py` (column indices of packed state arrays A/I/S/FF/FI and param vector P), `worldgen.py`,
   `kernels.py` (all Numba kernels), `env.py` (`GenesisEnv`, slot-based batched API), `pz_env.py`
   (PettingZoo ParallelEnv, agents named `agent_<uid>`), `logger.py` (RunLogger + `append_agent_log`).
-- `agents/baselines.py`, `analysis/survival.py`, `experiments/*.py`, `tests/`, `reports/stageN/`, `docs/`.
+- `agents/baselines.py`, `agents/policy.py` (ActorCritic, PolicyAgent), `agents/ppo.py` (PPOTrainer),
+  `analysis/survival.py`, `experiments/*.py` (train_ppo.py, eval_agents.py), `tests/`, `reports/stageN/`,
+  `docs/` (WORLD.md, AGENTS.md).
 - `runs/` is git-ignored (per-run config, manifest, metrics.csv, events.npy, summary.json).
 
 ## Commands
@@ -76,6 +78,10 @@ reward, and how does its order of emergence compare with human prehistory (as st
 - Known limitations: predators sit at their immigration floor ~30% of the time when 256 heuristic
   agents compete with them for small prey; greedy baseline ≈ random (water usually out of view → needs
   memory); wildfires can burn ~10% of land.
+
+- Learners: PyTorch on MPS (CPU inference is ~13x slower). Training worlds are seeds 1000+; evaluation
+  worlds are seeds 0-4 (held out). Commits: no Claude co-author trailers (user request); push straight
+  to main; force-pushes must be run by the user.
 
 ## Decisions log
 - 2026-10-26: Numba (not JAX) for the engine — no CUDA on this M4; Numba multi-core gives >100k steps/min.

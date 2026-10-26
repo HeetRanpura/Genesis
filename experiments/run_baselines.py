@@ -24,11 +24,13 @@ ROOT = Path(__file__).resolve().parent.parent
 POLICIES = ["random", "greedy", "heuristic"]
 
 
-def run_one(policy: str, seed: int, years: float, n_agents: int, cfg_path, out_root: Path) -> dict:
+def run_one(policy: str, seed: int, years: float, n_agents: int, cfg_path, out_root: Path,
+            make_policy=None, experiment: str = "stage1_baselines") -> dict:
+    """Evaluate one policy on one world. make_policy(env, seed) overrides the baseline lookup."""
     cfg = load_config(cfg_path, overrides={"agents": {"n_initial": n_agents, "max_agents": n_agents}})
     env = GenesisEnv(cfg, seed=seed)
-    pol = make_baseline(policy, env, seed)
-    log = RunLogger(out_root / f"{policy}_s{seed}", env, meta=dict(policy=policy, experiment="stage1_baselines"))
+    pol = make_policy(env, seed) if make_policy else make_baseline(policy, env, seed)
+    log = RunLogger(out_root / f"{policy}_s{seed}", env, meta=dict(policy=policy, experiment=experiment))
     initial = env.I[env.alive, I_UID].copy()
     ticks = int(years * env.year_len)
     obs = env.observe()
