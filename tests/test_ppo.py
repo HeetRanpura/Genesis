@@ -138,3 +138,17 @@ def test_training_rollouts_are_flight_recorded(tmp_path):
     assert idx["ticks"] == 16 and idx["skipped_ticks"] == 16
     chunk = next(iter_chunks(tmp_path / "w0", ("x_value", "x_probs")))
     assert chunk["x_probs"].shape[1] == tr.env.n_actions
+
+
+
+def test_validation_measures_mortality_on_fixed_worlds():
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "experiments"))
+    from train_ppo import validate
+    tr = _trainer()
+    out = validate(tr.model, [7, 8], 0.05, 12, "cpu", make=lambda s: _env(seed=s))
+    assert set(out) == {7, 8}
+    assert all(np.isfinite(v["deaths_per_agent_year"]) and v["deaths_per_agent_year"] >= 0 for v in out.values())
+    again = validate(tr.model, [7], 0.05, 12, "cpu", make=lambda s: _env(seed=s))
+    assert again[7] == out[7]                 # fixed worlds + seeded sampling -> repeatable

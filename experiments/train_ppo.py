@@ -5,7 +5,9 @@
     python experiments/train_ppo.py --name gru_s0 --iters 900 --resume        # continue a run
 
 Worlds: training uses seeds 1000 + 100*seed + w (a new world every --world-every iterations); evaluation
-seeds 0-4 (the baseline seeds) are never trained on. Fixed population of --agents (respawn), all
+seeds 0-4 (the baseline seeds) are never trained on. Every --val-every iterations the current policy is run
+on validation worlds (--val-seeds, default 500 and 501: neither training nor test) for --val-years, giving a
+learning curve in val.jsonl that is not confounded by the training world's season and difficulty. Fixed population of --agents (respawn), all
 capabilities off. Logs: runs/stage2/<name>/{config.json, train.jsonl, checkpoints/, world_*/}. Rollouts are
 flight-recorded (1 of every --record-every, all ticks, with the learner's value / action probabilities /
 log-prob; births and interventions always), unless free disk drops below --min-free-gb.
@@ -24,6 +26,7 @@ import numpy as np
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from agents.policy import PolicyAgent  # noqa: E402
 from agents.ppo import PPOConfig, PPOTrainer  # noqa: E402
 from sim import GenesisEnv, load_config  # noqa: E402
 from sim.constants import DEATH_NAMES  # noqa: E402
@@ -37,6 +40,28 @@ _SKIP = ("n_agents", "core", "device", "extra")
 def make_env(seed, n, memory, config=None):
     return GenesisEnv(load_config(config, overrides={"agents": {"n_initial": n, "max_agents": n},
                                                      "capabilities": {"memory": memory}}), seed=seed)
+
+
+@torch.no_grad()
+def validate(model, seeds, years, n, device, config=None, make=None):
+    """Deaths per agent-year of the current policy on fixed validation worlds (sampled actions, fresh memory).
+    Exposure = alive agent-ticks, i.e. the same measure as the baselines' lifetime-based rate."""
+    out = {}
+    for s in seeds:
+        env = make(s) if make else make_env(s, n, model.core_type == "gru", config)
+        pol = PolicyAgent(model, env.N, seed=s, device=device)
+        obs, deaths, exposure = env.observe(), 0, 0
+        causes0 = env.deaths_by_cause.copy()
+        for _ in range(int(years * env.year_len)):
+            exposure += int(env.alive.sum())
+            obs, r, died, info = env.step(pol.act(obs, env.alive))
+            deaths += int(died.sum())
+            if info["born"].any():
+                pol.reset(info["born"])
+        out[s] = dict(deaths_per_agent_year=deaths / (exposure / env.year_len),
+                      causes={n_: int(c) for n_, c in zip(DEATH_NAMES, env.deaths_by_cause - causes0) if c})
+    model.train()
+    return out
 
 
 def main():
@@ -54,6 +79,9 @@ def main():
     ap.add_argument("--min-free-gb", type=float, default=15.0, help="stop recording below this free disk")
     ap.add_argument("--ckpt-every", type=int, default=25)
     ap.add_argument("--resume", action="store_true")
+    ap.add_argument("--val-every", type=int, default=50, help="validation every k iterations (0 = off)")
+    ap.add_argument("--val-seeds", default="500,501", help="validation worlds (not training, not test)")
+    ap.add_argument("--val-years", type=float, default=1.0)
     for k, v in PPOConfig().__dict__.items():
         if k not in _SKIP:
             ap.add_argument(f"--{k.replace('_', '-')}", type=(lambda s: s.lower() in ("1", "true", "yes"))
@@ -107,6 +135,17 @@ def main():
         if it % 10 == 0:
             print(f"it {it:4d} w{w} deaths/agent-yr {row['deaths_per_agent_year']:.2f} r {row['mean_reward']:+.5f} "
                   f"ent {row['ent']:.2f} kl {row['kl']:.4f} {row['agent_steps_per_s']} sps", flush=True)
+        if a.val_every and (trainer.iteration % a.val_every == 0 or trainer.iteration == a.iters):
+            t0 = time.perf_counter()
+            val = validate(trainer.model, [int(x) for x in a.val_seeds.split(",")], a.val_years, a.agents,
+                           trainer.dev, a.config)
+            d = [v["deaths_per_agent_year"] for v in val.values()]
+            with open(out / "val.jsonl", "a") as vf:
+                vf.write(json.dumps(dict(iter=trainer.iteration, agent_steps=trainer.agent_steps,
+                                         deaths_per_agent_year=float(np.mean(d)), per_seed=val,
+                                         seconds=round(time.perf_counter() - t0, 1))) + "\n")
+            print(f"  validation @ {trainer.agent_steps / 1e6:.1f}M steps: deaths/agent-yr {np.mean(d):.2f} "
+                  f"({', '.join(f'{x:.2f}' for x in d)}) [{time.perf_counter() - t0:.0f}s]", flush=True)
         if trainer.iteration % a.ckpt_every == 0 or trainer.iteration == a.iters:
             trainer.save(out / "checkpoints" / "last.pt", world=w)
             if trainer.iteration % 100 == 0 or trainer.iteration == a.iters:

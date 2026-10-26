@@ -39,6 +39,11 @@ def main(names):
         ax[2].plot(steps, [r["ent"] for r in rows], label=name)
         ax[3].plot(s, smooth([r["mean_hydration"] for r in rows]), label=f"{name} hydration")
         ax[3].plot(s, smooth([r["mean_energy"] for r in rows]), "--", label=f"{name} energy")
+        vp = ROOT / "runs" / "stage2" / name / "val.jsonl"
+        if vp.exists():      # validation worlds (fixed, neither training nor test): the real learning curve
+            val = [json.loads(line) for line in open(vp)]
+            ax[0].plot([v["agent_steps"] / 1e6 for v in val], [v["deaths_per_agent_year"] for v in val], "o-",
+                       lw=2, ms=4, label=f"{name} validation worlds")
     for p, c in COL.items():
         ax[0].axhline(base[p]["deaths_per_agent_year"][0], color=c, ls=":", label=f"{p} (evaluated)")
     ax[0].set(title="Mortality during training (15-iter mean)", xlabel="agent-steps (M)", ylabel="deaths / agent-year")

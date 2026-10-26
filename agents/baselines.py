@@ -117,6 +117,33 @@ def _seek_food(grid, R, u):
     return -1
 
 
+@njit(cache=True)
+def _diet_forage(g, R, u, diet):
+    """Hungry-agent foraging for the diet probes (see heuristic_act)."""
+    if diet == 3:                                              # hunter: meat, then small prey, then plants
+        if _adjacent(g, R, C_FOOD, 10):
+            return EAT
+        if _adjacent(g, R, C_SMALL, 1):
+            return HUNT
+        ok, dy, dx = _nearest(g, R, C_FOOD, 10)
+        if not ok:
+            ok, dy, dx = _nearest(g, R, C_SMALL, 1)
+        if ok:
+            return _step_to(g, R, dy, dx, u, False)
+    if diet == 2:                                              # fruit forager: fruit trees first
+        if _adjacent(g, R, C_FRUIT, 80):
+            return EAT
+        ok, dy, dx = _nearest(g, R, C_FRUIT, 80)
+        if ok:
+            return _step_to(g, R, dy, dx, u, False)
+    if g[R, R, C_PLANT] >= 40:                                 # every diet falls back to grazing
+        return EAT
+    ok, dy, dx = _nearest(g, R, C_PLANT, 90)
+    if ok:
+        return _step_to(g, R, dy, dx, u, False)
+    return -1
+
+
 @njit(cache=True, parallel=True)
 def greedy_act(grid, selff, alive, U, heading, out):
     R = grid.shape[1] // 2
@@ -145,8 +172,10 @@ def greedy_act(grid, selff, alive, U, heading, out):
 
 
 @njit(cache=True, parallel=True)
-def heuristic_act(grid, selff, alive, U, heading, mode, out):
-    """mode: per-agent hysteresis state (0 none, 1 drinking, 2 eating)."""
+def heuristic_act(grid, selff, alive, U, heading, mode, out, diet=0):
+    """mode: per-agent hysteresis state (0 none, 1 drinking, 2 eating).
+    diet changes only what a hungry agent seeks (energy-economy probes; 0 = the standard heuristic):
+    1 grazer (plants only, never hunts), 2 fruit forager (fruit trees first), 3 hunter (small prey first)."""
     R = grid.shape[1] // 2
     for i in prange(grid.shape[0]):
         out[i] = NOOP
@@ -194,7 +223,7 @@ def heuristic_act(grid, selff, alive, U, heading, mode, out):
                 ok, dy, dx = _nearest(g, R, C_WATER, 200)
                 if ok:
                     a = _step_to(g, R, dy, dx, U[i, 0], False)
-        if a < 0 and mode[i] == 2:
+        if a < 0 and mode[i] == 2 and diet == 0:
             if _food_here(g, R):
                 a = EAT
             elif _adjacent(g, R, C_SMALL, 1):
@@ -205,6 +234,8 @@ def heuristic_act(grid, selff, alive, U, heading, mode, out):
                     ok, dy, dx = _nearest(g, R, C_SMALL, 1)
                     if ok:
                         a = _step_to(g, R, dy, dx, U[i, 0], False)
+        elif a < 0 and mode[i] == 2:
+            a = _diet_forage(g, R, U[i, 0], diet)
         if a < 0 and mode[i] == 0:
             # sated: stockpile ground food, rest at night, otherwise drift toward water + food
             if g[R, R, C_FOOD] >= 10 and selff[i, 5] < 0.5:
@@ -241,10 +272,15 @@ class GreedyForager(_StatefulBaseline):
 
 class HeuristicAgent(_StatefulBaseline):
     name = "heuristic"
+    DIETS = {"standard": 0, "grazer": 1, "fruit": 2, "hunter": 3}
+
+    def __init__(self, n_slots: int, seed: int = 0, diet: str = "standard"):
+        super().__init__(n_slots, seed)
+        self.diet = self.DIETS[diet]
 
     def act(self, obs, alive):
         U = self.rng.random((alive.shape[0], 2))
-        heuristic_act(obs["grid"], obs["self"], alive, U, self.heading, self.mode, self.out)
+        heuristic_act(obs["grid"], obs["self"], alive, U, self.heading, self.mode, self.out, self.diet)
         return self.out.copy()
 
 
@@ -255,4 +291,6 @@ def make_baseline(name: str, env, seed: int = 0):
         return GreedyForager(env.N, seed)
     if name == "heuristic":
         return HeuristicAgent(env.N, seed)
+    if name.startswith("heuristic:"):          # diet probes: heuristic:grazer | heuristic:fruit | heuristic:hunter
+        return HeuristicAgent(env.N, seed, diet=name.split(":", 1)[1])
     raise ValueError(name)
