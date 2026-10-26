@@ -31,6 +31,11 @@ baseline until Stage 2. Details: [docs/VIEWER.md](docs/VIEWER.md).
 
 ![viewer](reports/viewer/01_day_closeup.jpg)
 
+## Recording and learning material
+- Every viewer and experiment run records **every agent at every tick** (state, action, reward, death) in `runs/<run>/trajectory/`,
+  and can be replayed bit-exactly: `python -m analysis.trajectories runs/<run> --verify`. See `sim/recorder.py`.
+- New to reinforcement learning? Read [TEACHER.md](TEACHER.md). It explains the concepts through GENESIS and has an FAQ.
+
 ## Run
 
 ```bash

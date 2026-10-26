@@ -7,7 +7,7 @@ Repo: https://github.com/HeetRanpura/Genesis (branch `main`, direct commits, no 
 **Machine (since session 3): MacBook Pro M3 Pro, 11 cores, 18 GB, no CUDA.** Stages 1–1.1 were benchmarked on an
 M4 Air, so don't compare throughput across machines. Python 3.11 venv in `.venv` (`make setup`, which now also installs the viewer).
 
-**Uncommitted:** all session-3 work is still in the working tree (`git status`). Nothing has been committed or pushed.
+**Git:** session-3 work is committed locally (`41c19c2` viewer etc., then the recorder/TEACHER commit). **Not pushed.**
 
 ## Done
 - **Stage 1: world engine** (`ce1e40e`) and **Stage 1.1: food-limited fauna, faster observations** (`3c1d52d`).
@@ -30,7 +30,12 @@ M4 Air, so don't compare throughput across machines. Python 3.11 venv in `.venv`
        **At 1,000 agents the heuristic is worse than random** (3.85). Greedy also worsens with density, while random stays flat.
      - This is consistent with congestion at water (one body per cell), but the mechanism is untested.
        Compare learners with baselines at the same population size.
-  4. 43 tests pass (`make test`).
+  4. **Flight recorder** (`sim/recorder.py`, `analysis/trajectories.py`): every agent's full state, action, reward and death at
+     every tick, plus animals, world, events, births with genes, and interventions. On by default in the viewer and experiments.
+     It costs about 63 MB per sim year and runs at about 70% of full speed. Exact replay is verified bit-for-bit and can rebuild any agent's observation.
+  5. `TEACHER.md`: RL study guide and FAQ for the team.
+  6. Reproduction check: heuristic populations crash every winter, and random agents go extinct (AGENT_LOG).
+  7. 45 tests pass (`make test`).
 
 ## Population (the user asked)
 The default config starts **256 agents** in 2,048 slots. The population is fixed: a dead agent's slot is refilled at once.

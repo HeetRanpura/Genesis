@@ -78,6 +78,14 @@ reward, and how does its order of emergence compare with human prehistory (as st
   speed never changes results. Sessions ≥1 sim day append to AGENT_LOG unless `--no-agent-log` (use it for tests).
   Terrain relief/water depth/foliage are visual only (`scene_heights`); everything on the dashboard is measured.
   Debug hook in the page: `window.__app.cmd({cmd: ...})`, state in `window.__genesis` (used by screenshot scripts).
+- Flight recorder (`sim/recorder.py`, config `logging.trajectory*`, on by default in viewer + experiment scripts,
+  NOT inside GenesisEnv so tests/benchmarks don't record): call `rec.pre(obs)` before `env.step`, `rec.post(actions,
+  rewards, info, policy_state)` after, `rec.close()` at the end. Rows hold the state an agent ACTED FROM at tick t
+  plus a_t, r_t, died/cause (a slot refilled in the same tick still reports the dead agent). `analysis/trajectories.py`
+  loads/exports and `replay()` re-simulates bit-exactly (needs manual interventions in `env.manual_log` with every
+  parameter incl. flood `radius`/`days_given`; if you add a trigger_* method, log all its args and teach `_apply_manual`).
+  Any engine change that alters dynamics invalidates replay of older recordings (start-hash check catches it).
+- `TEACHER.md` is the team's RL study guide + FAQ: add new concepts/questions there.
 - Test arenas: `tests/helpers.py` (`make_env`, `clear_world`, `put_agent`) — 64×64, no respawn,
   disturbances neutralised.
 

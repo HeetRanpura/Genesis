@@ -434,6 +434,7 @@ class GenesisEnv:
 
     def trigger_flood(self, x: int, y: int, days: int | None = None, radius: int = 30, source="manual"):
         dc = self.cfg.disturbances
+        days_given = days is not None
         if days is None:
             days = int(self.rng.integers(dc.flood_days[0], dc.flood_days[1] + 1))
         yy, xx = np.ogrid[:self.H, :self.W]
@@ -442,7 +443,9 @@ class GenesisEnv:
         self.refresh_img(terrain_changed=False)
         self._log_env_event(EV_FLOOD_START, x, y, float(region.sum()))
         if source == "manual":
-            self.manual_log.append(dict(tick=self.tick, kind="flood", x=x, y=y, days=days))
+            # radius and days_given make the intervention exactly replayable (days may come from env.rng)
+            self.manual_log.append(dict(tick=self.tick, kind="flood", x=x, y=y, days=days, radius=radius,
+                                        days_given=days_given))
 
     def trigger_famine(self, days: int):
         self.famine_left = days

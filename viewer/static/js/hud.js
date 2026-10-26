@@ -203,6 +203,7 @@ export class HUD {
     if (!fr) return;
     $('engine').innerHTML = `sim <b>${fr.tps.toFixed(0)}</b> ticks/s${fr.target_tps ? ` (target ${fr.target_tps})` : ' (max)'} · tick ${fr.tick}<br>
       render <b>${s.fps.toFixed(0)}</b> fps · ${s.agents} agents · ${s.fauna} animals · net ${(s.kbps).toFixed(0)} kB/s<br>
+      ${fr.rec ? `<span style="color:#ff6b6b">●</span> recording every agent, every tick: ${fr.rec.rows.toLocaleString()} rows · ${fr.rec.mb} MB on disk${fr.rec.obs ? ' · +observations' : ''}<br>` : 'recording off<br>'}
       log: ${this.initMsg.run_dir}`;
   }
 

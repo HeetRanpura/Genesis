@@ -54,3 +54,20 @@ with 256 agents and 75–90 fps with 1,000 agents at 1600×900.
 **State at end:** 43 tests pass. Nothing is committed, and the user has not asked for a commit. The viewer server was left running on
 http://localhost:8787 (seed 0, 256 heuristic agents, AGENT_LOG summary on close). Viewer test run directories from this session
 remain in `runs/viewer/`; a safety check blocked a broad `rm`, so they were left for the user.
+
+### Session 3, continued: flight recorder, teaching guide (2026-10-26, ~20:45–21:05)
+- Committed the viewer work as `41c19c2` (not pushed).
+- **Reproduction check:** with `capabilities.reproduction` on, heuristic populations crash 60–85% every winter and random agents go extinct (see AGENT_LOG).
+- **User request: "record every agent's every activity at the atomic level."** Built `sim/recorder.py` and `analysis/trajectories.py`.
+  - Per tick it stores every agent's full state, action, reward and death cause, plus the policy's internal mode and all lifetime counters.
+  - It also stores world state per tick, every animal per tick, every event, every birth with genes, and every manual intervention.
+  - Optionally it stores every observation.
+  - Exact replay re-simulates and checks every tick, and can rebuild any agent's observation at any tick. A full sim year replays in 2.5 s.
+  - **Cost:** the first version cut speed to 35% (structured rows assembled per tick, map reductions, slow zlib). After optimising it
+    runs at 70%: 1,250 vs 1,780 ticks/s, 63 MB per sim year at 256 agents.
+  - It is on by default in the viewer and the experiment scripts.
+  - Engine change: manual floods now log `radius` and `days_given`, so floods whose duration was drawn at random replay exactly.
+  - Tests: `tests/test_recorder.py`, and `test_viewer.py` now replays the viewer session. 45 tests pass.
+- **Viewer shutdown bug:** SIGTERM left the server waiting up to 60 s for open WebSockets. The fix closes them in `on_shutdown` and sets
+  `shutdown_timeout=3`. The 20:38 and 20:58 sessions both still closed cleanly, with summaries and AGENT_LOG entries.
+- Wrote `TEACHER.md`: RL concepts explained through GENESIS, a glossary, and an FAQ built from the user's questions.

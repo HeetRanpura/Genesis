@@ -144,3 +144,7 @@ capabilities:          # all off by default (HARD RULE 2)
 logging:
   metrics_every: 50
   events: true
+  trajectory: true            # per-tick, per-agent flight recorder (sim/recorder.py) in viewer + experiment runs
+  trajectory_obs: false       # also store every observation (~2 KB/agent/tick); otherwise rebuild exactly by replay
+  trajectory_fauna: true      # per-tick state of every animal
+  trajectory_chunk: 480       # ticks per compressed chunk file (4 sim days)
