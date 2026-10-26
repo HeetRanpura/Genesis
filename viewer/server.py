@@ -53,11 +53,9 @@ POLICIES = ("heuristic", "greedy", "random")   # non-learning baselines
 
 
 def available_policies() -> list[str]:
-    """Baselines plus trained checkpoints: agents/ppo.py runs (runs/stage2/<run>/ckpt_latest.pt) as "ppo:<run>",
-    agents/rppo.py runs (runs/stage2/<run>/checkpoints/last.pt) as "rppo:<run>"."""
+    """Baselines plus trained learners (runs/stage2/<run>/checkpoints/last.pt) as "ppo:<run>"."""
     from agents.policy import trained_runs
-    rppo = sorted(p.parent.parent.name for p in (ROOT / "runs" / "stage2").glob("*/checkpoints/last.pt"))
-    return list(POLICIES) + [f"ppo:{r}" for r in trained_runs()] + [f"rppo:{r}" for r in rppo]
+    return list(POLICIES) + [f"ppo:{r}" for r in trained_runs()]
 FRAME_HZ = 30.0
 SAMPLE_EVERY = 20                    # ticks between dashboard samples (6 per sim day)
 HISTORY = 720                        # dashboard samples kept server-side (~120 sim days)
@@ -234,9 +232,6 @@ class Sim:
         if policy.startswith("ppo:"):
             from agents.policy import load_policy_agent
             self.policy = load_policy_agent(policy[4:], env.N, seed=seed, device="mps")
-        elif policy.startswith("rppo:"):
-            from agents.learned import LearnedPolicy
-            self.policy = LearnedPolicy(ROOT / "runs" / "stage2" / policy[5:] / "checkpoints" / "last.pt", env, seed=seed)
         else:
             self.policy = make_baseline(policy, env, seed=seed)
         self.obs = env.observe()

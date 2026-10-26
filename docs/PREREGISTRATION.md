@@ -25,3 +25,10 @@ Overlapping CIs are reported as "not distinguishable at n = 5", never as a win.
 
 **Known limitations, stated in advance:** a single training seed per learner (seed-to-seed variance of training is unmeasured);
 GPU (MPS) arithmetic isn't guaranteed bit-identical across runs, although seeds, sampling and the CPU path are deterministic and tested.
+
+### Appended 2026-10-26 (Heet): implementation change, hypotheses unchanged
+The learner code that produced the first evaluation (`agents/rppo.py`) was folded into the single learner
+`agents/ppo.py` (PPOTrainer), with the same network, rollout length, BPTT, epochs and reward handling as defaults.
+H1–H4 and the decision rule above are unchanged. They are re-tested on PPOTrainer runs `gru_s0`/`ff_s0`
+(same seeds, 600 iterations) and reported next to the original results; MPS training is not bit-identical, so the
+re-run is a replication, not a bitwise reproduction.

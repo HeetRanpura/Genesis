@@ -96,3 +96,17 @@ remain in `runs/viewer/`; a safety check blocked a broad `rm`, so they were left
   - the viewer lists both (`ppo:<run>`, `rppo:<run>`)
   - his `PolicyAgent` gained `.last` (value, probs, logp) for the recorder and inspector
   - 55 tests pass
+
+## 2026-10-26 (Heet's machine): one learner implementation
+- Folded `agents/rppo.py` into `agents/ppo.py` (PPOTrainer) at the user's request. The network in `agents/policy.py`
+  is now rppo's (conv32→conv64→fc256 + fc64 → fc256 → GRU/MLP 256, orthogonal init). PPOConfig defaults are rppo's
+  (128-tick rollouts, full BPTT, 4 epochs, raw rewards, 0.5-scaled value loss); truncated BPTT and return
+  normalisation remain options. Action sampling is on the CPU with a seeded generator.
+- One training script (`experiments/train_ppo.py`: rppo's world schedule, flight recording, disk guard, JSONL log,
+  `checkpoints/last.pt`) and one evaluation script (`experiments/eval_policy.py`). Removed `agents/rppo.py`,
+  `agents/learned.py`, `experiments/train_rppo.py`, `experiments/eval_agents.py`, `tests/test_rppo.py`; their tests
+  are ported into `tests/test_ppo.py` (12 tests). Viewer: only `ppo:<run>`. Make targets: `make train`, `make eval`.
+- Checkpoints carry `format: 2`; pre-unification PPOTrainer checkpoints are rejected (moved to `runs/stage2_legacy/`).
+- Original rppo evaluation files moved to `reports/stage2/rppo_original/`. Replication with PPOTrainer
+  (`gru_s0`, `ff_s0`, seed 0, 600 iterations) is running; results go into the Stage 2 report.
+- 58 tests pass.

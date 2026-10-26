@@ -28,7 +28,7 @@ reward, and how does its order of emergence compare with human prehistory (as st
   `kernels.py` (all Numba kernels), `env.py` (`GenesisEnv`, slot-based batched API), `pz_env.py`
   (PettingZoo ParallelEnv, agents named `agent_<uid>`), `logger.py` (RunLogger + `append_agent_log`).
 - `agents/baselines.py`, `agents/policy.py` (ActorCritic, PolicyAgent), `agents/ppo.py` (PPOTrainer),
-  `analysis/survival.py`, `experiments/*.py` (train_ppo.py, eval_agents.py), `tests/`, `reports/stageN/`,
+  `analysis/survival.py`, `experiments/*.py` (train_ppo.py, eval_policy.py), `tests/`, `reports/stageN/`,
   `docs/` (WORLD.md, AGENTS.md).
 - `viewer/` live viewer: `server.py` (aiohttp + sim thread, binary WebSocket protocol, run logging) and
   `static/` (three.js ES modules, no build step; three pinned in `viewer/package.json`, served from node_modules).
@@ -109,13 +109,14 @@ reward, and how does its order of emergence compare with human prehistory (as st
   worlds are seeds 0-4 (held out). Commits: no Claude co-author trailers (user request); push straight
   to main; force-pushes must be run by the user.
 
-- Two learner implementations: `agents/ppo.py` (PPOTrainer, main; `experiments/train_ppo.py`/`eval_agents.py`,
-  checkpoints `runs/stage2/<run>/ckpt_latest.pt`, viewer `ppo:<run>`) and `agents/rppo.py` (full-rollout BPTT variant
-  that produced `reports/stage2/STAGE2_REPORT.md`; `train_rppo.py`/`eval_policy.py`, `checkpoints/last.pt`, viewer
-  `rppo:<run>`). Both expose `.last` (value/probs/logp) so the flight recorder and the inspector show learner internals.
-  Stage 2 first results (rppo): learners 1.58–1.80 deaths/agent-yr on held-out worlds, beat random/greedy, not
-  distinguishable from heuristic (1.50); they starve (energy ceiling). Memory cut thirst but not overall mortality.
-  Eval protocol must match `run_baselines.py`; use held-out eval (not training-time rates) for claims.
+- ONE learner: `agents/ppo.py` (PPOTrainer) + `agents/policy.py` (ActorCritic, PolicyAgent, load_policy_agent).
+  Defaults = the configuration that produced the first Stage 2 results (128-tick rollouts, full BPTT, 4 epochs,
+  raw rewards; conv32->conv64->fc256 + fc64 -> fc256 -> GRU/MLP 256, orthogonal init). `experiments/train_ppo.py`
+  (worlds 1000+100*seed+w, new world every 40 iters, flight-recorded rollouts with a disk guard) and
+  `experiments/eval_policy.py` (same protocol as `run_baselines.py`). Checkpoints `runs/stage2/<run>/checkpoints/last.pt`,
+  format 2 (`trainer.save`; older formats are rejected). Viewer `ppo:<run>`. `PolicyAgent.last` = value/probs/logp.
+  The former `agents/rppo.py` (Advik's parallel implementation) was folded in on 2026-10-26; its original results are
+  kept in `reports/stage2/rppo_original/`. Eval protocol must match `run_baselines.py`; claims use held-out eval only.
 - PRs: from the fork advikdivekar/Genesis to HeetRanpura/Genesis main; author Advik Divekar only, no co-author trailers.
 
 ## Decisions log

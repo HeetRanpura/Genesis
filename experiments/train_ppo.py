@@ -1,120 +1,131 @@
-"""Train parameter-shared recurrent PPO agents in GENESIS (Stage 2, first slice).
+"""Train the GENESIS learner (agents/ppo.py: PPOTrainer; parameter-shared, survival reward only).
 
-    python experiments/train_ppo.py --name gru --core gru --minutes 60
-    python experiments/train_ppo.py --name mlp --core mlp --minutes 60        # memoryless ablation
-    python experiments/train_ppo.py --resume runs/stage2/gru/ckpt_latest.pt --minutes 30
+    python experiments/train_ppo.py --name gru_s0 --iters 600                 # GRU memory
+    python experiments/train_ppo.py --name ff_s0 --iters 600 --core mlp       # memoryless ablation
+    python experiments/train_ppo.py --name gru_s0 --iters 900 --resume        # continue a run
 
-Training worlds use seeds 1000+ (a new world every --world-years); evaluation uses seeds 0-4, so test
-worlds are never seen in training. Reward = the env's homeostatic reward (HARD RULE 1).
+Worlds: training uses seeds 1000 + 100*seed + w (a new world every --world-every iterations); evaluation
+seeds 0-4 (the baseline seeds) are never trained on. Fixed population of --agents (respawn), all
+capabilities off. Logs: runs/stage2/<name>/{config.json, train.jsonl, checkpoints/, world_*/}. Rollouts are
+flight-recorded (1 of every --record-every, all ticks, with the learner's value / action probabilities /
+log-prob; births and interventions always), unless free disk drops below --min-free-gb.
+PPO hyperparameters: see agents/ppo.py PPOConfig (each is also a --flag).
 """
 from __future__ import annotations
 
 import argparse
-import csv
 import json
+import shutil
 import sys
 import time
 from pathlib import Path
 
+import numpy as np
 import torch
-import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from agents.ppo import PPOConfig, PPOTrainer  # noqa: E402
 from sim import GenesisEnv, load_config  # noqa: E402
+from sim.constants import DEATH_NAMES  # noqa: E402
 from sim.logger import append_agent_log, git_commit  # noqa: E402
+from sim.recorder import TrajectoryRecorder  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
+_SKIP = ("n_agents", "core", "device", "extra")
 
 
-def make_env(args, world_idx: int):
-    cfg = load_config(args.config, overrides={
-        "agents": {"n_initial": args.agents, "max_agents": args.agents},
-        "capabilities": {"memory": args.core == "gru"},
-        "logging": {"events": False}})
-    return GenesisEnv(cfg, seed=1000 + world_idx)
+def make_env(seed, n, memory, config=None):
+    return GenesisEnv(load_config(config, overrides={"agents": {"n_initial": n, "max_agents": n},
+                                                     "capabilities": {"memory": memory}}), seed=seed)
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--name", default="gru")
-    ap.add_argument("--core", default="gru", choices=["gru", "mlp"])
+    ap.add_argument("--name", required=True)
+    ap.add_argument("--seed", type=int, default=0, help="learner seed (network init, sampling, world sequence)")
+    ap.add_argument("--iters", type=int, default=600, help="total iterations (resume continues up to this)")
     ap.add_argument("--agents", type=int, default=256)
-    ap.add_argument("--config", default=None, help="world config (YAML) merged over the default")
-    ap.add_argument("--minutes", type=float, default=60)
-    ap.add_argument("--max-agent-steps", type=float, default=float("inf"))
-    ap.add_argument("--world-years", type=float, default=1.0, help="switch to a new training world this often")
-    ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--config", default=None, help="world config YAML merged over the default")
+    ap.add_argument("--world-every", type=int, default=40, help="iterations per training world")
+    ap.add_argument("--core", default="gru", choices=["gru", "mlp"])
+    ap.add_argument("--no-memory", action="store_true", help="same as --core mlp")
+    ap.add_argument("--device", default="mps" if torch.backends.mps.is_available() else "cpu")
+    ap.add_argument("--record-every", type=int, default=1, help="record 1 of k rollouts in full (0 = off)")
+    ap.add_argument("--min-free-gb", type=float, default=15.0, help="stop recording below this free disk")
     ap.add_argument("--ckpt-every", type=int, default=25)
-    ap.add_argument("--resume", default=None)
-    ap.add_argument("--device", default="mps")
+    ap.add_argument("--resume", action="store_true")
     for k, v in PPOConfig().__dict__.items():
-        if k not in ("n_agents", "core", "device", "extra"):
-            ap.add_argument(f"--{k.replace('_', '-')}", type=type(v), default=v)
-    args = ap.parse_args()
-
-    out = ROOT / "runs" / "stage2" / args.name
-    out.mkdir(parents=True, exist_ok=True)
-    pcfg = PPOConfig(n_agents=args.agents, core=args.core, device=args.device,
-                     **{k: getattr(args, k) for k in PPOConfig().__dict__ if k not in ("n_agents", "core", "device", "extra")})
-    world_idx = 0
-    trainer = PPOTrainer(make_env(args, world_idx), pcfg, seed=args.seed)
-    if args.resume:
-        ck = torch.load(args.resume, weights_only=False)
-        trainer.load_state_dict(ck["trainer"])
-        world_idx = ck["world_idx"]
-        trainer.set_env(make_env(args, world_idx))
-        print(f"resumed at iteration {trainer.iteration}, world {world_idx}")
-    (out / "config.yaml").write_text(yaml.safe_dump(dict(args=vars(args), ppo=pcfg.__dict__, git=git_commit(),
-                                                         env=trainer.env.cfg.to_dict()), sort_keys=False))
-    log_path = out / "train.csv"
-    new_log = not log_path.exists() or not args.resume
-    f = open(log_path, "w" if new_log else "a", newline="")
-    writer = None
-    t_end = time.time() + 60 * args.minutes
-    ticks_per_world = int(args.world_years * trainer.env.year_len)
-    world_start_tick = trainer.env.tick
-    print(f"device={trainer.dev} core={args.core} agents={args.agents} actions={trainer.env.n_actions}", flush=True)
-    recent = []      # (deaths, agent-steps) of the last 20 iterations for a less noisy printout
-    while time.time() < t_end and trainer.agent_steps < args.max_agent_steps:
-        info = trainer.iterate()
-        info["world"] = world_idx
-        if writer is None:
-            writer = csv.DictWriter(f, fieldnames=list(info.keys()))
-            if new_log:
-                writer.writeheader()
-        writer.writerow(info)
-        f.flush()
-        recent = (recent + [(info["deaths"], args.agents * pcfg.rollout_len)])[-20:]
-        rolling = sum(d for d, _ in recent) / (sum(n for _, n in recent) / trainer.env.year_len)
-        if trainer.iteration % 10 == 0:
-            print(f"it {trainer.iteration:5d} steps {trainer.agent_steps/1e6:6.2f}M world {world_idx} "
-                  f"deaths/agent-yr(20it) {rolling:.2f} E/H {info['mean_energy']:.2f}/"
-                  f"{info['mean_hydration']:.2f} ent {info['entropy']:.2f} kl {info['approx_kl']:.4f} "
-                  f"ev {info['explained_var']:.2f} [{info['collect_s']:.1f}s+{info['update_s']:.1f}s]", flush=True)
-        if trainer.iteration % args.ckpt_every == 0:
-            ck = dict(trainer=trainer.state_dict(), world_idx=world_idx, obs_shapes=trainer.env.obs_shapes,
-                      n_actions=trainer.env.n_actions, core=args.core, hidden=pcfg.hidden)
-            torch.save(ck, out / "ckpt_latest.pt")
-        if trainer.env.tick - world_start_tick >= ticks_per_world:
-            world_idx += 1
-            trainer.set_env(make_env(args, world_idx))
-            world_start_tick = trainer.env.tick
-    ck = dict(trainer=trainer.state_dict(), world_idx=world_idx, obs_shapes=trainer.env.obs_shapes,
-              n_actions=trainer.env.n_actions, core=args.core, hidden=pcfg.hidden)
-    torch.save(ck, out / "ckpt_latest.pt")
-    torch.save(ck, out / f"ckpt_iter{trainer.iteration}.pt")
-    f.close()
-    summary = dict(name=args.name, core=args.core, iterations=trainer.iteration, agent_steps=trainer.agent_steps,
-                   worlds_seen=world_idx + 1, last=info)
-    (out / "summary.json").write_text(json.dumps(summary, indent=2, default=float))
-    append_agent_log(f"Stage 2 training run '{args.name}' ({args.core})", [
-        f"PPO, parameter-shared {args.core.upper()} policy, {args.agents} agents, "
-        f"{trainer.agent_steps/1e6:.1f}M agent-steps, {trainer.iteration} iterations, {world_idx + 1} training worlds "
-        f"(seeds 1000+). Last iteration: deaths/agent-year {info['deaths_per_agent_year']:.2f} (training worlds, "
-        f"stochastic policy), mean energy {info['mean_energy']:.2f}, hydration {info['mean_hydration']:.2f}. "
-        f"Evaluation on held-out seeds is a separate entry."])
-    print("done", json.dumps(summary["last"], default=float)[:300])
+        if k not in _SKIP:
+            ap.add_argument(f"--{k.replace('_', '-')}", type=(lambda s: s.lower() in ("1", "true", "yes"))
+                            if isinstance(v, bool) else type(v), default=v)
+    a = ap.parse_args()
+    core = "mlp" if a.no_memory else a.core
+    out = ROOT / "runs" / "stage2" / a.name
+    (out / "checkpoints").mkdir(parents=True, exist_ok=True)
+    cfg = PPOConfig(n_agents=a.agents, core=core, device=a.device,
+                    **{k: getattr(a, k) for k in PPOConfig().__dict__ if k not in _SKIP})
+    torch.set_num_threads(5)
+    world_seed = lambda w: 1000 + a.seed * 100 + w  # noqa: E731
+    trainer = PPOTrainer(make_env(world_seed(0), a.agents, core == "gru", a.config), cfg, seed=a.seed)
+    if a.resume and (out / "checkpoints" / "last.pt").exists():
+        trainer.load(out / "checkpoints" / "last.pt")
+        print(f"resumed at iteration {trainer.iteration}", flush=True)
+    (out / "config.json").write_text(json.dumps(dict(args=vars(a), ppo={k: v for k, v in cfg.__dict__.items() if k != "extra"},
+                                                     git_commit=git_commit(), torch=torch.__version__,
+                                                     n_actions=trainer.env.n_actions,
+                                                     action_names=trainer.env.action_names), indent=2))
+    log = open(out / "train.jsonl", "a")
+    world, rec = -1, None
+    t_start = time.perf_counter()
+    print(f"{a.name}: core={core} device={trainer.dev} agents={a.agents} iters {trainer.iteration}->{a.iters}", flush=True)
+    while trainer.iteration < a.iters:
+        it = trainer.iteration
+        w = it // a.world_every
+        if w != world:
+            if rec:
+                rec.close()
+            if world != -1 or w != 0:
+                trainer.set_env(make_env(world_seed(w), a.agents, core == "gru", a.config))
+            world = w
+            rec = (TrajectoryRecorder(trainer.env, out / f"world_{w:03d}",
+                                      meta=dict(source="train_ppo", learner=a.name, world_index=w,
+                                                note="sampled rollouts; policy changes every iteration"))
+                   if a.record_every else None)
+        recording = bool(rec) and it % a.record_every == 0 and shutil.disk_usage(ROOT).free / 1e9 > a.min_free_gb
+        info = trainer.iterate(rec, recording)
+        env = trainer.env
+        row = dict(iter=it, world=w, tick=env.tick, agent_steps=trainer.agent_steps, mean_reward=info["mean_reward"],
+                   deaths=info["deaths"], deaths_per_agent_year=info["deaths"] / max(info["agent_years"], 1e-9),
+                   causes={n: int(c) for n, c in zip(DEATH_NAMES, info["causes"]) if c},
+                   mean_energy=float(env.A[env.alive, 0].mean()), mean_hydration=float(env.A[env.alive, 1].mean()),
+                   recorded=recording, collect_s=info["collect_s"], total_s=info["total_s"],
+                   agent_steps_per_s=round(cfg.rollout_len * a.agents / info["total_s"]),
+                   wall_s=round(time.perf_counter() - t_start, 1),
+                   **{k: info[k] for k in ("pg", "vf", "ent", "kl", "clipfrac", "explained_var")})
+        log.write(json.dumps(row, default=float) + "\n")
+        log.flush()
+        if it % 10 == 0:
+            print(f"it {it:4d} w{w} deaths/agent-yr {row['deaths_per_agent_year']:.2f} r {row['mean_reward']:+.5f} "
+                  f"ent {row['ent']:.2f} kl {row['kl']:.4f} {row['agent_steps_per_s']} sps", flush=True)
+        if trainer.iteration % a.ckpt_every == 0 or trainer.iteration == a.iters:
+            trainer.save(out / "checkpoints" / "last.pt", world=w)
+            if trainer.iteration % 100 == 0 or trainer.iteration == a.iters:
+                trainer.save(out / "checkpoints" / f"iter_{trainer.iteration:05d}.pt", world=w)
+    if rec:
+        rec.close()
+    log.close()
+    rows = [json.loads(line) for line in open(out / "train.jsonl")]
+    k = max(1, len(rows) // 10)
+    f = lambda rr: np.mean([x["deaths_per_agent_year"] for x in rr])  # noqa: E731
+    append_agent_log(f"Stage 2 training: {a.name}", [
+        f"PPOTrainer ({'GRU' if core == 'gru' else 'memoryless'}), {a.agents} agents, {len(rows)} iterations × "
+        f"{cfg.rollout_len} ticks ({rows[-1]['agent_steps']:,} agent-steps), training worlds {world_seed(0)}+ "
+        "(eval worlds 0-4 held out).",
+        f"- deaths/agent-yr during training: first {k} iters {f(rows[:k]):.2f} → last {k} iters {f(rows[-k:]):.2f} "
+        "(training-time rate with exploration; not an evaluation).",
+        f"- last-iteration causes: {rows[-1]['causes']}; entropy {rows[-1]['ent']:.2f}.",
+        f"- logs: `runs/stage2/{a.name}/train.jsonl`, checkpoints in `runs/stage2/{a.name}/checkpoints/`."])
+    print("done", flush=True)
 
 
 if __name__ == "__main__":

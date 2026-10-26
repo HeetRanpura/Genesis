@@ -80,4 +80,4 @@ def test_available_policies_include_baselines():
     from viewer.server import POLICIES, available_policies
     pols = available_policies()
     assert list(POLICIES) == pols[:3]
-    assert all(p.startswith(("ppo:", "rppo:")) for p in pols[3:])
+    assert all(p.startswith("ppo:") for p in pols[3:])

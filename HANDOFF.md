@@ -4,13 +4,13 @@ Read this first, then `CLAUDE.md` (engine facts, gotchas, decisions) and `PLAN.m
 criteria). `logs/AGENT_LOG.md` records how agents are doing. `logs/SESSION_LOG.md` records engineering sessions.
 
 Repo: https://github.com/HeetRanpura/Genesis (branch `main`, direct commits, no PRs).
-**Machine (since session 3): MacBook Pro M3 Pro, 11 cores, 18 GB, no CUDA.** Stages 1–1.1 were benchmarked on an
-M4 Air, so don't compare throughput across machines. Python 3.11 venv in `.venv` (`make setup`, which now also installs the viewer).
+**Machines:** MacBook Pro M3 Pro (Advik; 11 cores, 18 GB) and MacBook Air M4 (Heet; fanless, 10 cores, 16 GB, ~10 GB
+free disk). Never compare throughput across machines. The simulator is bit-identical on both (baselines reproduced). Python 3.11 venv in `.venv` (`make setup`, which now also installs the viewer).
 
-**Git:** work goes as PRs from the fork `advikdivekar/Genesis` to `HeetRanpura/Genesis` main, authored by Advik Divekar only (no
-co-author trailers). PR #1 was closed after Heet re-applied its commits on a rewritten main. **PR #2** (branch
-`genesis-combined`) carries the rest: preregistration, Stage 2 results, `agents/rppo.py`, and recorder and viewer integration.
-Heet's `agents/ppo.py` (PPOTrainer) is the main learner.
+**Git:** Heet commits to `HeetRanpura/Genesis` main directly; Advik sends PRs from the fork `advikdivekar/Genesis`.
+No co-author trailers on any commit. PR #1 was re-applied by cherry-pick (Heet rewrote main's history); PR #2 was
+merged by rebase. **There is one learner:** `agents/ppo.py` (PPOTrainer). Advik's parallel `agents/rppo.py` was folded
+into it on 2026-10-26; its defaults became PPOTrainer's defaults.
 
 ## Done
 - **Stage 1: world engine** (`ce1e40e`) and **Stage 1.1: food-limited fauna, faster observations** (`3c1d52d`).
@@ -64,7 +64,9 @@ The world also starts with 400 small prey, 48 large prey and 12 predators, which
 6. Test sessions from this session's screenshots are still in `runs/viewer/` (git-ignored). Delete them if you don't want them.
 
 ## Stage 2: first slice done (2026-10-26). Read `reports/stage2/STAGE2_REPORT.md`
-- Recurrent PPO (`agents/rppo.py`) and a memoryless ablation, 20M agent-steps each, evaluated on held-out worlds 0–4.
+- Recurrent PPO and a memoryless ablation, 20M agent-steps each, evaluated on held-out worlds 0–4. These first numbers
+  came from the former `agents/rppo.py` (kept in `reports/stage2/rppo_original/`); the unified PPOTrainer re-run of
+  the same protocol is in the report's "Reproduction" section.
   - GRU learner: 1.80 [1.52, 2.10] deaths/agent-yr. Memoryless: 1.58 [1.35, 1.83]. Heuristic: 1.50 [1.04, 2.11].
   - Both learners beat random and greedy. Neither is distinguishable from the heuristic yet.
 - The learners solved thirst, predators and fire, and now **starve**: energy intake roughly equals basal metabolism, they live on plants only, and they never hunt.
@@ -74,7 +76,7 @@ The world also starts with 400 small prey, 48 large prey and 12 predators, which
   2. longer runs (100M+) with 3 training seeds per arm
   3. an energy-economy check: can hunting or fruit ever pay? Report it; don't tune the world for the learner
   4. Stage 3 social metrics on the learner recordings
-- Watch a learner live: `make viewer POLICY=rppo:gru_s0`. The inspector shows the network's
+- Watch a learner live: `make viewer POLICY=ppo:gru_s0`. The inspector shows the network's
   value estimate and action probabilities.
 - Disk: 29 GB free. Stage 2 recordings use about 6 GB (`runs/stage2*`). Each training run records every rollout (about 2 GB per 20M steps).
 

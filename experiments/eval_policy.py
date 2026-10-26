@@ -1,5 +1,5 @@
-"""Evaluate an agents/rppo.py checkpoint exactly like the baselines (same seeds, length, population, statistics).
-(For agents/ppo.py runs use experiments/eval_agents.py.)
+"""Evaluate a trained learner (PPOTrainer checkpoint) exactly like the baselines (same seeds, length,
+population, statistics).
 
     python experiments/eval_policy.py runs/stage2/gru_s0/checkpoints/last.pt --name gru_s0
 
@@ -18,7 +18,7 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from agents.learned import LearnedPolicy  # noqa: E402
+from agents.policy import load_policy_agent  # noqa: E402
 from analysis.survival import bootstrap_ci, hedges_g, km_at, lifetimes  # noqa: E402
 from sim import GenesisEnv, load_config  # noqa: E402
 from sim.constants import DEATH_NAMES  # noqa: E402
@@ -29,9 +29,9 @@ from sim.recorder import TrajectoryRecorder  # noqa: E402
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def run_one(ckpt, seed, years, n, out, greedy):
+def run_one(ckpt, seed, years, n, out, greedy, device="mps"):
     env = GenesisEnv(load_config(overrides={"agents": {"n_initial": n, "max_agents": n}}), seed=seed)
-    pol = LearnedPolicy(ckpt, env, greedy=greedy, seed=seed)
+    pol = load_policy_agent(ckpt, env.N, seed=seed, device=device, greedy=greedy)
     log = RunLogger(out / f"s{seed}", env, meta=dict(policy="ppo", checkpoint=str(ckpt), experiment="stage2_eval"))
     rec = TrajectoryRecorder(env, out / f"s{seed}", meta=dict(policy="ppo", checkpoint=str(ckpt)))
     initial = env.I[env.alive, I_UID].copy()
@@ -68,11 +68,12 @@ def main():
     ap.add_argument("--years", type=float, default=2.0)
     ap.add_argument("--agents", type=int, default=256)
     ap.add_argument("--greedy", action="store_true", help="argmax actions instead of sampling")
+    ap.add_argument("--device", default="mps")
     a = ap.parse_args()
     out = ROOT / "runs" / "stage2_eval" / a.name
     res = []
     for s in range(a.seeds):
-        r = run_one(a.checkpoint, s, a.years, a.agents, out, a.greedy)
+        r = run_one(a.checkpoint, s, a.years, a.agents, out, a.greedy, a.device)
         res.append(r)
         print(f"seed {s}: deaths/agent-yr {r['deaths_per_agent_year']:.2f} S(1yr) {r['km_survival_1yr']:.3f} "
               f"{r['deaths_by_cause']} ({r['wall_s']}s)", flush=True)

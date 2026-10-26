@@ -1,9 +1,9 @@
 # Stage 2 report: first learning agents (2026-10-26)
 
-> **Which code:** these results come from `agents/rppo.py`, an independent full-rollout-BPTT PPO implementation
-> developed in parallel with the repository's main learner `agents/ppo.py` (PPOTrainer, `docs/AGENTS.md`). The two
-> share architecture and protocol (shared conv+GRU actor-critic, training seeds 1000+, held-out seeds 0–4). Running
-> `experiments/eval_agents.py` on PPOTrainer checkpoints under the same protocol is the natural cross-check.
+> **Which code:** the results tables below were first produced by `agents/rppo.py`, an implementation developed in
+> parallel with `agents/ppo.py`. On 2026-10-26 the two were merged: PPOTrainer is now the only learner, with rppo's
+> configuration as its defaults. The original evaluation files are in `reports/stage2/rppo_original/`, and the
+> **Reproduction** section at the end re-runs the same protocol with PPOTrainer.
 
 **Bottom line:** recurrent and memoryless PPO agents, rewarded only for their own homeostasis, learned in about
 20M agent-steps to survive on unseen worlds about 2× better than random and greedy baselines. They are **not yet
@@ -13,11 +13,11 @@ thirst deaths (large effect, CIs touching) but increased starvation. Hypotheses 
 (`docs/PREREGISTRATION.md`, commit `4c84dec`) before any evaluation.
 
 ## Setup
-- **Learner** (`agents/rppo.py`): one parameter-shared actor-critic for all agents. The input is the 11×11×16 view plus the agent's
+- **Learner** (then `agents/rppo.py`, now `agents/policy.py` + `agents/ppo.py`): one parameter-shared actor-critic for all agents. The input is the 11×11×16 view plus the agent's
   own body, its neighbours and heard signals. Layers: conv(32) → conv(64, stride 2) → fc 256, plus an fc 64 for the vector inputs, then fc 256 →
   **GRU 256** (or a feed-forward layer in the memoryless ablation) → policy and value heads, about 1.1M parameters. Each agent has its own
   memory state, reset when a new agent fills a slot.
-- **Training** (`experiments/train_rppo.py`): PPO with γ 0.995, λ 0.95, clip 0.2, lr 3e-4, entropy 0.01, 4 epochs, 128-tick
+- **Training** (then `experiments/train_rppo.py`, now `experiments/train_ppo.py`): PPO with γ 0.995, λ 0.95, clip 0.2, lr 3e-4, entropy 0.01, 4 epochs, 128-tick
   rollouts × 256 agents, 600 iterations (**19.7M agent-steps**, about 50 min each on an M3 Pro, MPS).
   - Fixed population, all capabilities off, reward = own drive reduction + death penalty only.
   - A new training world every 40 iterations (seeds 1000+). The evaluation worlds (0–4) are never seen in training.
@@ -76,5 +76,5 @@ A fixed-world evaluation every N iterations is needed (next step).
    the world for the learner.
 3. Stage 3 social metrics on the learner recordings (co-feeding, proximity, transfer of food), with baseline nulls.
 
-Reproduce: `make train-rppo NAME=gru_s0`, `make train-rppo NAME=ff_s0 MEMORYLESS=1`, then `make eval-rppo NAME=...`, then
+Reproduce: `make train NAME=gru_s0`, `make train NAME=ff_s0 MEMORYLESS=1`, then `make eval NAME=...`, then
 `python experiments/plot_training.py gru_s0 ff_s0`.
