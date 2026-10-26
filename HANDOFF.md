@@ -20,23 +20,24 @@ Machine: MacBook Air M4 (fanless, 10 cores, 16 GB, no CUDA). Python 3.11 venv in
     0.3% / 13% / 2%.
   - Throughput: observations are copies from an incrementally maintained obs image
     (`env.img`), line of sight is precomputed (`env.vismask`), and the whole tick is one Numba call
-    (`kernels.world_tick`). Interleaved A/B vs Stage 1 on the heat-throttled laptop, 1,000 agents, 256²:
-    with observations 1,662–1,728 steps/s (≈100–104k steps/min) vs 1,196–1,277 (≈72–77k);
-    dynamics only 2,560–3,870 vs 1,740–2,230 steps/s.
-  - 41 tests pass (`make test`), including bit-reproducibility, reward purity, obs-image invariant,
-    sequential/parallel twin equivalence, PettingZoo API.
+    (`kernels.world_tick`). `make bench` (median of 5 whole-day windows): 1,000 agents on 256² with
+    observations = 1,867 steps/s (112k steps/min); dynamics only 172k/min. Interleaved A/B vs Stage 1 in
+    the same thermal state: with obs 1,662–1,728 vs 1,196–1,348 steps/s.
+  - Baselines rerun (5 seeds × 2 yrs): random 2.55, greedy 2.21, heuristic 1.00 deaths/agent-yr.
+    The heuristic's thirst deaths tripled. An ablation shows the cause is food-limited prey (no more
+    free meat). This is explained in the report and agent log, not a bug.
+  - 41 tests pass (`make test`): bit-reproducibility, reward purity, obs-image invariant,
+    sequential/parallel twin equivalence, PettingZoo API, and the world rules.
+  - Full write-up: `reports/stage1/STAGE1_REPORT.md` (Stage 1.1 section at the top).
 
-## In progress when this was written
-1. **Heuristic baseline mortality shifted** under the new ecology: 1.00 deaths/agent-yr [0.70, 1.41]
-   (was 0.87), thirst deaths 705 → 2,460 (5 seeds × 2 yrs). Verified the fused-tick observation equals
-   `observe()` (not an obs bug). Deaths cluster in spring and winter of both years (runs now start
-   right after the spin-up winter, in a lean early spring, instead of on lush tick-0 vegetation).
-   Next: confirm by checking hydration/energy traces in early spring and whether the heuristic's
-   eat-first hysteresis walks agents away from water when food is scarce. Report, don't tune the
-   heuristic to look good.
-2. **Final benchmark table**: run `make bench` after the machine has cooled (burst numbers) and keep the
-   interleaved A/B numbers above as the sustained/throttled figures. Update
-   `reports/stage1/STAGE1_REPORT.md` (add a Stage 1.1 section) and `logs/AGENT_LOG.md`.
+## Open issues / follow-ups (not started)
+1. **512² regression**: 77k steps/min dynamics (Stage 1: 111k). Suspects: vegetation pass + img writes
+   over 262k cells, daily `refresh_img(terrain_changed=False)` (full image rebuild; only the water
+   channel actually changes — rebuild just that), larger fauna. Profile with
+   `experiments/bench_sim.py`-style windows at 512².
+2. **Predators with agents present** sit at their floor ~31% of the time (agents out-compete them for
+   small prey). Options if it matters for experiments: predators scavenging carcasses, prey refuges.
+3. 2,000 agents with observations: 89k steps/min (no target set, but noted).
 
 ## Next stage (needs the user's go-ahead): Stage 2 — agent minds
 See PLAN.md. Suggested first slice: PyTorch (CPU/MPS) recurrent PPO with a parameter-shared GRU
