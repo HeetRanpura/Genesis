@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "genesis-preview",
+      "runtimeExecutable": ".venv/bin/python",
+      "runtimeArgs": ["viewer/preview_server.py", "--policy", "ppo:gru", "--seed", "0", "--port", "8765"],
+      "port": 8765
+    }
+  ]
+}

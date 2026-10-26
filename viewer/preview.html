@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GENESIS preview</title>
+<style>
+  :root {
+    --bg: #0e1116; --panel: #161b22e6; --ink: #e6edf3; --muted: #8b949e; --line: #30363d;
+    --accent: #7ee787; --warn: #f0883e; --bad: #ff7b72; --water: #58a6ff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+    font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; cursor: grab; image-rendering: pixelated; }
+  canvas.dragging { cursor: grabbing; }
+  .panel { position: fixed; background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 14px; backdrop-filter: blur(6px); }
+  #hud { top: 12px; left: 12px; min-width: 260px; }
+  #hud .big { font-size: 18px; font-weight: 600; letter-spacing: .2px; }
+  #side { top: 12px; right: 12px; width: 290px; max-height: calc(100vh - 24px); overflow: auto; }
+  #controls { bottom: 12px; left: 12px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  button { background: #21262d; color: var(--ink); border: 1px solid var(--line); border-radius: 6px;
+    padding: 5px 10px; font: inherit; cursor: pointer; }
+  button:hover { border-color: var(--muted); }
+  button.on { background: #238636; border-color: #2ea043; }
+  h3 { margin: 10px 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); }
+  h3:first-child { margin-top: 0; }
+  .row { display: flex; justify-content: space-between; gap: 8px; }
+  .muted { color: var(--muted); }
+  .bar { height: 6px; background: #21262d; border-radius: 3px; overflow: hidden; margin: 2px 0 6px; }
+  .bar > div { height: 100%; border-radius: 3px; transition: width .3s; }
+  #events div { color: var(--muted); font-size: 12px; padding: 2px 0; border-bottom: 1px dashed #21262d; }
+  #inspect { display: none; }
+  .chip { display: inline-block; padding: 1px 7px; border-radius: 10px; background: #21262d;
+    border: 1px solid var(--line); font-size: 11px; margin-right: 4px; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; margin-right: 10px; font-size: 12px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+
+<div id="hud" class="panel">
+  <div class="big" id="clock">—</div>
+  <div class="muted" id="weather">—</div>
+  <div style="margin-top:6px" id="flags"></div>
+  <div class="muted" style="margin-top:6px; font-size:12px" id="policy"></div>
+</div>
+
+<div id="side" class="panel">
+  <h3>Population</h3>
+  <div class="row"><span>Agents alive</span><b id="pop">—</b></div>
+  <div class="row"><span class="muted">Group hunts (large prey)</span><span id="hunts">0</span></div>
+  <div class="row"><span class="muted">Food dropped for others</span><span id="drops">0</span></div>
+  <h3>Mean needs</h3>
+  <div id="needs"></div>
+  <h3>Animals</h3>
+  <div class="legend" id="fauna"></div>
+  <h3>Deaths so far</h3>
+  <div id="deaths" class="muted">none</div>
+  <div id="inspect">
+    <h3>Selected agent <button id="unfollow" style="float:right;padding:1px 7px">×</button></h3>
+    <div id="agentInfo"></div>
+  </div>
+  <h3>Events</h3>
+  <div id="events"></div>
+</div>
+
+<div id="controls" class="panel">
+  <button id="pause">Pause</button>
+  <span class="muted">speed</span>
+  <button data-speed="5">5</button><button data-speed="20">20</button>
+  <button data-speed="60">60</button><button data-speed="240">240</button>
+  <span class="muted">ticks/s · click:</span>
+  <button data-mode="inspect" class="on">Inspect</button>
+  <button data-mode="fire">Start fire</button>
+  <button data-mode="flood">Flood</button>
+  <button id="reset">New run</button>
+  <span class="muted">scroll = zoom · drag = pan</span>
+</div>
+
+<script>
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let W = 256, H = 256, world = new Image(), worldReady = false;
+let cam = { x: 128, y: 128, zoom: 3 };
+let prev = null, cur = null, curT = 0, interval = 100;
+let mode = 'inspect', follow = -1, dpr = window.devicePixelRatio || 1, userView = false;
+const SPECIES = [{ name: 'small prey', col: '#c9a27e', r: 0.28 }, { name: 'large prey', col: '#6d4c41', r: 0.45 },
+                 { name: 'predator', col: '#e5534b', r: 0.4 }];
+const NEEDS = [['energy', '#f0883e'], ['hydration', '#58a6ff'], ['health', '#7ee787'], ['warmth', '#ff7b72']];
+
+function resize() { dpr = window.devicePixelRatio || 1; cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; }
+addEventListener('resize', resize); resize();
+
+function fitView() { if (!innerWidth || !innerHeight) return; cam.zoom = Math.min(innerWidth / W, innerHeight / H) * 0.95; cam.x = W / 2; cam.y = H / 2; }
+
+async function pollState() {
+  try {
+    const s = await (await fetch('/state')).json();
+    const now = performance.now();
+    if (cur) interval = Math.min(400, Math.max(40, now - curT));
+    prev = cur; cur = s; curT = now;
+    if (W !== s.w) { W = s.w; H = s.h; fitView(); }
+    updatePanels(s);
+  } catch (e) {}
+  setTimeout(pollState, 100);
+}
+async function pollWorld() {
+  const img = new Image();
+  img.onload = () => { world = img; worldReady = true; };
+  img.src = '/world.png?t=' + Date.now();
+  setTimeout(pollWorld, 400);
+}
+
+function toScreen(x, y) {
+  return [(x - cam.x) * cam.zoom * dpr + cv.width / 2, (y - cam.y) * cam.zoom * dpr + cv.height / 2];
+}
+function toWorld(px, py) {
+  return [(px * dpr - cv.width / 2) / (cam.zoom * dpr) + cam.x, (py * dpr - cv.height / 2) / (cam.zoom * dpr) + cam.y];
+}
+
+const rain = Array.from({ length: 220 }, () => [Math.random(), Math.random(), 0.5 + Math.random()]);
+
+function draw() {
+  requestAnimationFrame(draw);
+  ctx.fillStyle = '#0e1116'; ctx.fillRect(0, 0, cv.width, cv.height);
+  if (!cur) return;
+  if (!userView && follow < 0) fitView();   // keep the whole island in view until the user pans/zooms
+  const z = cam.zoom * dpr;
+  // follow selected agent
+  const t = Math.min(1, (performance.now() - curT) / interval);
+  const prevPos = new Map();
+  if (prev) for (const a of prev.agents) prevPos.set(a[8], a);
+  if (follow >= 0) {
+    const a = cur.agents.find(a => a[8] === follow);
+    if (a) { const p = prevPos.get(follow) || a; cam.x += ((p[0] + (a[0] - p[0]) * t + 0.5) - cam.x) * 0.15;
+             cam.y += ((p[1] + (a[1] - p[1]) * t + 0.5) - cam.y) * 0.15; }
+  }
+  const [ox, oy] = toScreen(0, 0);
+  if (worldReady) { ctx.imageSmoothingEnabled = false; ctx.drawImage(world, ox, oy, W * z, H * z); }
+  // fruit
+  if (cam.zoom > 2.5) {
+    ctx.fillStyle = '#ffd23f';
+    for (const [x, y] of cur.fruit) { const [sx, sy] = toScreen(x + 0.5, y + 0.5); ctx.fillRect(sx - z * .12, sy - z * .12, z * .24, z * .24); }
+  }
+  // fauna
+  for (const [x, y, s] of cur.fauna) {
+    const sp = SPECIES[s], [sx, sy] = toScreen(x + 0.5, y + 0.5), r = Math.max(1.2 * dpr, sp.r * z);
+    ctx.fillStyle = sp.col;
+    if (s === 2) { ctx.beginPath(); ctx.moveTo(sx, sy - r); ctx.lineTo(sx + r, sy + r); ctx.lineTo(sx - r, sy + r); ctx.fill(); }
+    else { ctx.beginPath(); ctx.arc(sx, sy, r, 0, 7); ctx.fill(); }
+  }
+  // agents (interpolated)
+  for (const a of cur.agents) {
+    const p = prevPos.get(a[8]);
+    let x = a[0], y = a[1];
+    if (p && Math.abs(p[0] - a[0]) + Math.abs(p[1] - a[1]) <= 2) { x = p[0] + (a[0] - p[0]) * t; y = p[1] + (a[1] - p[1]) * t; }
+    const [sx, sy] = toScreen(x + 0.5, y + 0.5), r = Math.max(2 * dpr, 0.42 * z);
+    const health = a[4] / 100;
+    ctx.beginPath(); ctx.arc(sx, sy, r, 0, 7);
+    ctx.fillStyle = `hsl(${a[7]}, 70%, ${45 + 20 * health}%)`; ctx.fill();
+    ctx.lineWidth = Math.max(1, r * 0.35);
+    ctx.strokeStyle = health > 0.6 ? '#ffffffcc' : (health > 0.3 ? '#f0883e' : '#ff3b30'); ctx.stroke();
+    if (a[9] === 1 && cam.zoom > 3) { ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(sx + r * .8, sy - r * .8, r * .35, 0, 7); ctx.fill(); }
+    if (a[8] === follow) { ctx.beginPath(); ctx.arc(sx, sy, r * 2.2, 0, 7); ctx.strokeStyle = '#7ee787'; ctx.lineWidth = 2 * dpr; ctx.stroke(); }
+  }
+  // night tint and weather
+  if (cur.night > 0.01) { ctx.fillStyle = `rgba(10, 18, 48, ${0.55 * cur.night})`; ctx.fillRect(0, 0, cv.width, cv.height); }
+  if (cur.weather === 'fog') { ctx.fillStyle = 'rgba(200, 205, 215, 0.25)'; ctx.fillRect(0, 0, cv.width, cv.height); }
+  if (cur.weather === 'rain') {
+    const cold = cur.temp < 0;
+    ctx.strokeStyle = cold ? 'rgba(255,255,255,.7)' : 'rgba(170,200,255,.45)'; ctx.lineWidth = dpr;
+    const tt = performance.now() / 1000;
+    for (const [rx, ry, v] of rain) {
+      const x = ((rx + tt * 0.05 * v) % 1) * cv.width, y = ((ry + tt * (cold ? 0.08 : 0.6) * v) % 1) * cv.height;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - (cold ? 1 : 3) * dpr, y + (cold ? 2 : 10) * dpr); ctx.stroke();
+    }
+  }
+}
+
+function bar(label, v, col) {
+  return `<div class="row"><span class="muted">${label}</span><span>${(v * 100).toFixed(0)}%</span></div>` +
+         `<div class="bar"><div style="width:${Math.max(0, Math.min(100, v * 100))}%;background:${col}"></div></div>`;
+}
+function updatePanels(s) {
+  const hh = Math.floor(s.time_of_day * 24), mm = Math.floor((s.time_of_day * 24 - hh) * 60);
+  document.getElementById('clock').textContent =
+    `Year ${s.year + 1} · ${s.season[0].toUpperCase() + s.season.slice(1)} · day ${s.day + 1} · ${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+  document.getElementById('weather').textContent = `${s.weather}, ${s.temp} °C at sea level · tick ${s.tick}`;
+  document.getElementById('flags').innerHTML = [s.drought && 'drought', s.cold_snap && 'cold snap', s.famine && 'famine']
+    .filter(Boolean).map(f => `<span class="chip" style="color:var(--warn)">${f}</span>`).join('');
+  document.getElementById('policy').textContent = `Agents: ${s.policy}`;
+  document.getElementById('pop').textContent = s.population;
+  document.getElementById('hunts').textContent = s.group_hunts;
+  document.getElementById('drops').textContent = s.food_drops;
+  document.getElementById('needs').innerHTML = NEEDS.map(([k, c]) => bar(k, s.needs[k], c)).join('');
+  document.getElementById('fauna').innerHTML =
+    `<span><i class="dot" style="background:${SPECIES[0].col}"></i>${s.counts.small_prey} small prey</span>` +
+    `<span><i class="dot" style="background:${SPECIES[1].col}"></i>${s.counts.large_prey} large prey</span>` +
+    `<span><i class="dot" style="background:${SPECIES[2].col}"></i>${s.counts.predators} predators</span>`;
+  const d = Object.entries(s.deaths);
+  document.getElementById('deaths').innerHTML = d.length ? d.map(([k, v]) => `<span class="chip">${k} ${v}</span>`).join('') : 'none';
+  document.getElementById('events').innerHTML = s.events.slice().reverse().map(e => `<div>${e}</div>`).join('') || '<div>quiet so far</div>';
+  document.querySelectorAll('[data-speed]').forEach(b => b.classList.toggle('on', +b.dataset.speed === s.speed));
+  document.getElementById('pause').textContent = s.paused ? 'Resume' : 'Pause';
+  if (follow >= 0) loadAgent();
+}
+let agentBusy = false;
+async function loadAgent() {
+  if (agentBusy) return; agentBusy = true;
+  try {
+    const a = await (await fetch('/agent?slot=' + follow)).json();
+    const box = document.getElementById('inspect');
+    if (!a.uid) { box.style.display = 'none'; follow = -1; return; }
+    box.style.display = 'block';
+    document.getElementById('agentInfo').innerHTML =
+      `<div class="row"><span>Agent #${a.uid}</span><span class="muted">gen ${a.generation}</span></div>` +
+      `<div class="muted">age ${a.age_days} / ${a.lifespan_days} days · doing: <b style="color:var(--ink)">${a.last_action}</b> · carrying ${a.carrying}</div>` +
+      NEEDS.map(([k, c]) => bar(k, a[k], c)).join('') +
+      `<div class="muted">ate ${a.eaten} energy · walked ${a.walked} cells · kills: ${a.small_kills} small, ${a.large_kills} large</div>`;
+  } finally { agentBusy = false; }
+}
+
+// interaction
+let drag = null;
+cv.addEventListener('mousedown', e => { drag = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y, moved: false }; });
+addEventListener('mousemove', e => {
+  if (!drag) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  if (Math.abs(dx) + Math.abs(dy) > 4) { drag.moved = true; userView = true; cv.classList.add('dragging'); follow = -1; }
+  cam.x = drag.cx - dx / cam.zoom; cam.y = drag.cy - dy / cam.zoom;
+});
+addEventListener('mouseup', e => {
+  cv.classList.remove('dragging');
+  if (drag && !drag.moved && cur) {
+    const [wx, wy] = toWorld(e.clientX, e.clientY);
+    const x = Math.floor(wx), y = Math.floor(wy);
+    if (mode === 'inspect') {
+      let best = -1, bd = 3;
+      for (const a of cur.agents) { const d = Math.hypot(a[0] + .5 - wx, a[1] + .5 - wy); if (d < bd) { bd = d; best = a[8]; } }
+      follow = best; if (follow >= 0) { userView = true; cam.zoom = Math.max(cam.zoom, 8); }
+      if (follow < 0) document.getElementById('inspect').style.display = 'none'; else loadAgent();
+    } else fetch(`/control?${mode}=${x},${y}`);
+  }
+  drag = null;
+});
+cv.addEventListener('wheel', e => {
+  e.preventDefault();
+  userView = true;
+  const [wx, wy] = toWorld(e.clientX, e.clientY);
+  cam.zoom = Math.max(1, Math.min(40, cam.zoom * Math.exp(-e.deltaY * 0.0015)));
+  const [nx, ny] = toWorld(e.clientX, e.clientY);
+  cam.x += wx - nx; cam.y += wy - ny;
+}, { passive: false });
+document.getElementById('pause').onclick = () => fetch('/control?paused=' + (cur && cur.paused ? 0 : 1));
+document.getElementById('reset').onclick = () => { follow = -1; fetch('/control?reset=1'); };
+document.getElementById('unfollow').onclick = () => { follow = -1; document.getElementById('inspect').style.display = 'none'; };
+document.querySelectorAll('[data-speed]').forEach(b => b.onclick = () => fetch('/control?speed=' + b.dataset.speed));
+document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => {
+  mode = b.dataset.mode; document.querySelectorAll('[data-mode]').forEach(x => x.classList.toggle('on', x === b));
+});
+
+fitView(); pollState(); pollWorld(); draw();
+</script>
+</body>
+</html>
