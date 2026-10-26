@@ -77,20 +77,24 @@ Hockett's design features); comparator that aligns each run's emergence order + 
 - [ ] Report language frames comparisons as structural analogies only.
 
 ## Stage 5 — Live viewer
-**Build:** Python WebSocket server streaming delta-encoded state at 30–60 Hz; PixiJS v8 client: autotiled
+**Build:** Python WebSocket server streaming delta-encoded state at 30–60 Hz; PixiJS v8 client (**changed 2026-10-26
+at the user's request: three.js, perspective "diorama" camera — see `docs/VIEWER.md`**): autotiled
 painterly-pixel terrain, animated water, wind-swayed vegetation, day/night lighting + bloom, weather + seasons,
 procedural animated agent sprites keyed to genes, signal rings, social links, interpolation, overlays, inspector,
 dashboard sparklines, time controls + replay scrub, experiment controls, auto-director, record mode.
 
 **Accept when:**
-- [ ] 60 fps at 1440p with 1,000 agents on the M4 (measured, screenshot of perf HUD).
-- [ ] Every control is logged to the run's event log.
-- [ ] Screenshots: day, night, rain, snow, fire, flood, inspector, overlays.
+- [~] 60 fps at 1440p with 1,000 agents: measured 75–90 fps at 1600×900 (pixel ratio 1) with 1,000 agents on an
+      M3 Pro (headless Chromium/Metal). 1440p not yet measured in a real browser.
+- [x] Every control is logged (`runs/viewer/*/controls.jsonl`; disturbances also via `manual_log` + event stream).
+- [x] Screenshots: day, night, rain, snow/winter, fire, flood, inspector, overlays (`reports/viewer/`).
+- [ ] Still open: replay scrub + bookmarks, side-by-side seeds, mid-run resource changes, spawn/remove agents,
+      audio, 4K offline export, social/signal overlays and imagined futures (need learners).
 
 ## Stage 6 — Engineering quality
 - [ ] One-command setup (`make setup`) and run (`make viewer`, `make bench`, `make test`).
 - [ ] Local experiment tracking (MLflow-compatible file store or JSONL), checkpoints, resumable runs.
-- [ ] Smoke test: headless sim + viewer server boot + one frame received.
+- [x] Smoke test: headless sim + viewer server boot + one frame received (`tests/test_viewer.py`).
 - [ ] Profiling report: steps/s, FPS, memory, bottleneck fixes.
 
 ## Stage 7 — First experiments
@@ -109,4 +113,5 @@ how to launch the viewer, three most promising next experiments.
 | Stage | Status |
 |---|---|
 | 1 World engine | done, plus Stage 1.1 tuning (food-limited fauna, ≥100k steps/min with obs at 1,000 agents) — awaiting review ([report](reports/stage1/STAGE1_REPORT.md)) |
-| 2–7 | not started |
+| 5 Live viewer | first slice done (three.js, 2026-10-26): live world, dashboard, inspector, controls, logging — see `docs/VIEWER.md` |
+| 2–4, 6–7 | not started (Stage 2 awaits the user's go-ahead) |

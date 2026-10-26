@@ -5,3 +5,5 @@ runs/
 .pytest_cache/
 *.egg-info/
 .DS_Store
+viewer/node_modules/
+logs/viewer_server.out

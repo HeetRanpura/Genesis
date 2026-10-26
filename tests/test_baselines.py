@@ -30,3 +30,22 @@ def test_baselines_emit_valid_actions():
     for name in ("random", "greedy", "heuristic"):
         a = make_baseline(name, env, 0).act(obs, env.alive)
         assert a.shape == (env.N,) and a.min() >= 0 and a.max() < env.n_actions
+
+
+def test_lifetimes_start_at_run_start_not_tick_zero():
+    """Regression: env.tick includes the ecological spin-up, so the initial cohort's lifetimes must be
+    measured from env.spinup_ticks (measuring from 0 credited every founder with a year it never lived)."""
+    import numpy as np
+
+    from analysis.survival import lifetimes
+    from sim.constants import EV_DEATH
+    from tests.helpers import make_env
+
+    env = make_env(seed=1, time={"spinup_years": 0.25})
+    assert env.tick == env.spinup_ticks > 0
+    uids = env.I[env.alive, 5].copy()   # I_UID
+    t_death = env.tick + 10
+    ev = np.array([[t_death, EV_DEATH, uids[0], 0, 0, 0, 0]], np.float64)
+    dur, obs, _ = lifetimes(ev, uids, env.tick + 100, start_tick=env.spinup_ticks)
+    assert dur[0] == 11 and obs[0]
+    assert np.all(dur[1:] == 100)

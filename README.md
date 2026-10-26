@@ -4,7 +4,8 @@ An artificial-life testbed for one question: **what social organisation and cult
 minimally specified learning agents are rewarded only for staying alive?** Agents are never rewarded
 for anything social; sharing, grouping, signalling or norms must emerge, or be reported as absent.
 
-Status: **Stage 1 (world engine) complete, with Stage 1.1 tuning** (food-limited fauna; 112k steps/min with full observations for 1,000 agents). Handoff notes: [HANDOFF.md](HANDOFF.md). See [PLAN.md](PLAN.md) for all stages and
+Status: **Stage 1 (world engine) complete, with Stage 1.1 tuning** (food-limited fauna; 112k steps/min with full observations for 1,000 agents),
+plus the **first slice of the live 3-D viewer** (Stage 5). Handoff notes: [HANDOFF.md](HANDOFF.md). See [PLAN.md](PLAN.md) for all stages and
 [reports/stage1/STAGE1_REPORT.md](reports/stage1/STAGE1_REPORT.md) for the evidence.
 
 ## Setup (macOS / Linux, Python 3.11 via uv)
@@ -16,6 +17,19 @@ make setup
 ```bash
 make test
 ```
+
+## Live viewer
+
+```bash
+make viewer-setup     # once (aiohttp + three.js via npm)
+make viewer           # then open http://localhost:8787
+```
+
+The viewer shows the world in 3-D, with agents, animals, weather, seasons, fires and floods, plus live metrics. You can
+inspect any agent, change speed, and trigger disturbances. Every action is logged. Agents are driven by a non-learning
+baseline until Stage 2. Details: [docs/VIEWER.md](docs/VIEWER.md).
+
+![viewer](reports/viewer/01_day_closeup.jpg)
 
 ## Run
 

@@ -2,11 +2,12 @@
 
 Read this first in every session. Keep it current: update it whenever a stage lands, a design
 decision is made, or a gotcha is found. `PLAN.md` holds milestones/acceptance criteria;
-`logs/AGENT_LOG.md` is the running record of how agents are doing (append, never rewrite history).
+`logs/AGENT_LOG.md` is the running record of how agents are doing (append, never rewrite history);
+`logs/SESSION_LOG.md` records engineering sessions; `HANDOFF.md` is the latest hand-over.
 
 ## What this is
-Artificial-life research testbed: survival-only RL agents in a seeded foraging ecology, plus (later)
-a live PixiJS viewer. Research question: what social organisation/culture emerges with no social
+Artificial-life research testbed: survival-only RL agents in a seeded foraging ecology, plus a live
+three.js viewer (`viewer/`). Research question: what social organisation/culture emerges with no social
 reward, and how does its order of emergence compare with human prehistory (as structural analogy).
 
 ## Non-negotiable rules
@@ -29,10 +30,14 @@ reward, and how does its order of emergence compare with human prehistory (as st
 - `agents/baselines.py`, `agents/policy.py` (ActorCritic, PolicyAgent), `agents/ppo.py` (PPOTrainer),
   `analysis/survival.py`, `experiments/*.py` (train_ppo.py, eval_agents.py), `tests/`, `reports/stageN/`,
   `docs/` (WORLD.md, AGENTS.md).
+- `viewer/` live viewer: `server.py` (aiohttp + sim thread, binary WebSocket protocol, run logging) and
+  `static/` (three.js ES modules, no build step; three pinned in `viewer/package.json`, served from node_modules).
+  Spec: `docs/VIEWER.md`. `viewer/preview_server.py` + `preview.html` is an older stdlib-only quick preview.
 - `runs/` is git-ignored (per-run config, manifest, metrics.csv, events.npy, summary.json).
 
 ## Commands
-`make setup` · `make test` · `make bench` · `make baselines` · `make evidence` (Python is `.venv/bin/python`, 3.11).
+`make setup` · `make test` · `make bench` · `make baselines` · `make evidence` · `make viewer` (http://localhost:8787)
+(Python is `.venv/bin/python`, 3.11). Port 8765 is taken by another local service on this machine: don't use it.
 
 ## Engine facts / gotchas
 - One tick = `GenesisEnv._climate_tick` (Python) + ONE Numba call `kernels.world_tick` that runs agents ->
@@ -65,8 +70,16 @@ reward, and how does its order of emergence compare with human prehistory (as st
 - Fauna tuning check: `experiments/fauna_diagnostics.py` (caps should never bind; report floor time).
 - Numba compile on first run ~20–40 s (cached in `__pycache__` afterwards).
 - `fcount` has 4 entries: 3 species counts + a rotating free-slot hint.
-- This machine is a fanless MacBook Air M4: sustained runs heat-throttle (~15-30% slower). Compare
-  performance only with interleaved A/B runs in the same thermal state; quote medians.
+- Stages 1–1.1 were benchmarked on a fanless MacBook Air M4 (heat-throttles 15–30%). From session 3 (2026-10-26)
+  work happens on a MacBook Pro M3 Pro (11 cores, 18 GB). Never compare throughput across machines; compare
+  only interleaved A/B runs in the same thermal state; quote medians.
+- `env.tick` INCLUDES the spin-up (`env.spinup_ticks`, 3,840 by default). Anything measuring time since the
+  run started (lifetimes, run years, clocks) must subtract it. `analysis.survival.lifetimes(..., start_tick=
+  env.spinup_ticks)`; getting this wrong halved measured mortality once (fixed 2026-10-26, regression test).
+- Viewer: commands are applied between ticks on the sim thread and logged to `runs/viewer/*/controls.jsonl`;
+  speed never changes results. Sessions ≥1 sim day append to AGENT_LOG unless `--no-agent-log` (use it for tests).
+  Terrain relief/water depth/foliage are visual only (`scene_heights`); everything on the dashboard is measured.
+  Debug hook in the page: `window.__app.cmd({cmd: ...})`, state in `window.__genesis` (used by screenshot scripts).
 - Test arenas: `tests/helpers.py` (`make_env`, `clear_world`, `put_agent`) — 64×64, no respawn,
   disturbances neutralised.
 
@@ -75,9 +88,14 @@ reward, and how does its order of emergence compare with human prehistory (as st
 - Stage 1.1 (2026-10-26): fauna made food-limited (caps never bind), observation path rewritten
   (incremental obs image, static line-of-sight masks, fused world_tick) -> >=100k steps/min with obs at
   1,000 agents even when throttled. 41 tests. Awaiting user review before Stage 2.
+- Session 3 (2026-10-26): live three.js viewer (Stage 5 first slice; `make viewer`, docs/VIEWER.md); fixed the
+  survival-analysis spin-up bug (baselines corrected: random 3.83 / greedy 3.31 / heuristic 1.50 deaths/agent-yr);
+  density sweep shows water-seeking baselines collapse at 1,000 agents (heuristic 4.94, worse than random). 43 tests.
+  Nothing committed yet. Stage 2 still awaits the user's go-ahead.
 - Known limitations: predators sit at their immigration floor ~30% of the time when 256 heuristic
-  agents compete with them for small prey; greedy baseline ≈ random (water usually out of view → needs
-  memory); wildfires can burn ~10% of land.
+  agents compete with them for small prey; greedy baseline only slightly better than random (water usually out of
+  view → needs memory); wildfires can burn ~10% of land; at ≥1,000 agents water-seeking baselines die of thirst
+  (congestion hypothesis untested).
 
 - Learners: PyTorch on MPS (CPU inference is ~13x slower). Training worlds are seeds 1000+; evaluation
   worlds are seeds 0-4 (held out). Commits: no Claude co-author trailers (user request); push straight
@@ -88,6 +106,8 @@ reward, and how does its order of emergence compare with human prehistory (as st
   PyTorch (MPS/CPU) planned for Stage 2 learners.
 - 2026-10-26: Ocean is salt water; fresh water only from rivers/streams/lakes (makes water spatially scarce).
 - 2026-10-26: Large prey require ≥2 attackers by default (stag-hunt pressure); ablation switch exists.
+- 2026-10-26: Live viewer uses three.js (user request) instead of PixiJS; perspective "diorama" camera, no build
+  step, three 0.170.0 vendored via npm. Baseline policy drives agents until learners exist (labelled in the UI).
 - 2026-10-26: Fauna regulation by food: seasonal breeding (spring-autumn), torpor (x0.2 metabolism below
   5 C), grazing-tolerant plant regrowth (seed floor 0.1), large-prey browsing niche (else small prey
   exclude them), 1-year ecological spin-up. Caps/floors are safety rails only.
