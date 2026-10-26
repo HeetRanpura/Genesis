@@ -68,3 +68,9 @@ def test_viewer_server_streams_and_logs(tmp_path):
     summary = json.loads((run_dir / "summary.json").read_text())
     assert summary["manual_interventions"][0]["kind"] == "fire"
     assert summary["ticks"] > 0
+    # the session's flight recording exists and replays bit-exactly (including the manual fire)
+    from analysis.trajectories import load, replay
+    idx = json.loads((run_dir / "trajectory" / "index.json").read_text())
+    assert idx["ticks"] == summary["ticks"] and idx["agent_rows"] > 0
+    assert [m["kind"] for m in load(run_dir, "manual")] == ["fire"]
+    assert sum(1 for _ in replay(run_dir)) == idx["ticks"]

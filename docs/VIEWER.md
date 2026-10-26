@@ -57,6 +57,18 @@ Each session writes `runs/viewer/<stamp>_s<seed>_<policy>/`. The directory holds
 
 A session that lasts at least one sim day also appends a summary to `logs/AGENT_LOG.md`; use `--no-agent-log` for test sessions.
 
+**Flight recorder (on by default):** `trajectory/` stores every agent's complete state, action, reward, death and cause
+at **every tick** (the atomic step). It also stores every animal, the world state, every event, every birth with genes
+and lineage, and every manual intervention. It costs about 63 MB per simulated year at 256 agents and runs at about 70% of
+full speed. Observations are stored only with `--record-obs` (about 125 MB per sim year). Otherwise they are rebuilt
+exactly by replay. Use `--no-record` to disable it.
+```bash
+python -m analysis.trajectories runs/viewer/<run>                       # what was recorded
+python -m analysis.trajectories runs/viewer/<run> --verify              # re-simulate, check every tick bit-exactly
+python -m analysis.trajectories runs/viewer/<run> --uid 7 --csv a7.csv  # one agent's whole life, tick by tick
+```
+In Python, `analysis.trajectories.load(run, "agents")` returns every row, and `observation_of(run, uid, tick)` returns exactly what an agent saw.
+
 ## What is real and what is decoration
 **From the simulation:** agent and animal positions, actions, body variables, genes, plant biomass,
 snow, fire, floods, dried streams, carcasses and dropped food, fruit, burnt forest, weather, temperature,

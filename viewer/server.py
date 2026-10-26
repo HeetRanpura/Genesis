@@ -41,6 +41,7 @@ from sim.layout import (A_CARRY_AMT, A_ENERGY, A_HEALTH, A_HYDRATION, A_TEMP_EFF
                         F_HEALTH, F_SPECIES, F_X, F_Y, I_AGE, I_ALIVE, I_CARRY_TYPE, I_GEN, I_HIST_PTR,
                         I_LAST_ACTION, I_LIFESPAN, I_PARENT, I_SHELTERED, I_UID, I_X, I_Y, STAT_NAMES)
 from sim.logger import RunLogger, append_agent_log
+from sim.recorder import TrajectoryRecorder
 
 ROOT = Path(__file__).resolve().parent.parent
 HERE = Path(__file__).resolve().parent
@@ -186,9 +187,11 @@ class Sim:
 
     def __init__(self, seed: int, policy: str, n_agents: int | None, config: str | None,
                  overrides: dict | None = None, log_root: Path | None = None, speed: float = 1.0,
-                 agent_log: bool = True):
+                 agent_log: bool = True, record: bool = True, record_obs: bool | None = None):
         self.config_path = config
         self.agent_log = agent_log
+        self.record = record
+        self.record_obs = record_obs
         self.base_overrides = overrides or {}
         self.log_root = Path(log_root or ROOT / "runs" / "viewer")
         self.commands: queue.Queue = queue.Queue()
@@ -225,6 +228,9 @@ class Sim:
         stamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
         self.logger = ViewerRunLogger(self.log_root / f"{stamp}_s{seed}_{policy}", env,
                                       meta={"source": "viewer", "policy": policy, "base_tps": BASE_TPS})
+        self.recorder = (TrajectoryRecorder(env, self.logger.dir, obs=self.record_obs,
+                                            meta={"source": "viewer", "policy": policy})
+                         if self.record and cfg.logging.get("trajectory", True) else None)
         self.build_s = time.perf_counter() - t0
         self.agent_ticks = 0
         self.scrounge = 0
@@ -246,7 +252,9 @@ class Sim:
         years = run_ticks / env.year_len
         deaths = int(env.deaths_by_cause.sum())
         dpy = deaths / max(1e-9, self.agent_ticks / env.year_len)
-        s = self.logger.close(dict(ticks=run_ticks, spinup_ticks=env.spinup_ticks, agent_ticks=self.agent_ticks,
+        rec = self.recorder.close(dict(policy=self.policy_name)) if self.recorder else None
+        s = self.logger.close(dict(trajectory=dict(ticks=rec["ticks"], agent_rows=rec["agent_rows"], bytes=rec["bytes"])
+                                   if rec else None, ticks=run_ticks, spinup_ticks=env.spinup_ticks, agent_ticks=self.agent_ticks,
                                    deaths_per_agent_year=dpy, policy=self.policy_name))
         if self.agent_log and run_ticks >= env.tpd:   # only sessions of at least one sim day
             causes = {n: int(v) for n, v in zip(DEATH_NAMES, env.deaths_by_cause) if v}
@@ -409,6 +417,8 @@ class Sim:
             fires=int(env.n_fire), paused=self.paused, speed=self.speed, tps=round(tps, 1),
             target_tps=(BASE_TPS * self.speed) if self.speed else None, version=self.version,
             samples=self.new_samples, fx=self.fx, wall=now,
+            rec=dict(rows=self.recorder.rows, ticks=self.recorder.ticks, mb=round(self.recorder.bytes / 1e6, 1),
+                     obs=self.recorder.rec_obs) if self.recorder else None,
         )
         self.new_samples = []
         self.fx = []
@@ -487,8 +497,13 @@ class Sim:
     # ---------------------------------------------------------------- main loop
     def _step(self):
         env = self.env
+        rec = self.recorder
+        if rec:
+            rec.pre(self.obs)
         actions = self.policy.act(self.obs, env.alive)
-        self.obs, _, _, info = env.step(actions)
+        self.obs, rewards, _, info = env.step(actions)
+        if rec:
+            rec.post(actions, rewards, info, policy_state=getattr(self.policy, "mode", None))
         if info["born"].any():
             self.policy.reset(info["born"])
         self.agent_ticks += int(info["alive"].sum())
@@ -609,16 +624,21 @@ def make_app(sim: Sim) -> web.Application:
     async def on_startup(app):
         app[BCAST] = asyncio.create_task(broadcaster(app))
 
-    async def on_cleanup(app):
+    async def on_shutdown(app):
+        # close open WebSockets first, otherwise aiohttp waits for them (up to shutdown_timeout) before exiting
         app[BCAST].cancel()
         for ws in list(clients):
-            await ws.close()
+            await ws.close(code=1001, message=b"server shutdown")
+
+    async def on_cleanup(app):
+        app[BCAST].cancel()
 
     app.router.add_get("/", index)
     app.router.add_get("/ws", ws_handler)
     app.router.add_static("/vendor/three", THREE)
     app.router.add_static("/", STATIC)
     app.on_startup.append(on_startup)
+    app.on_shutdown.append(on_shutdown)
     app.on_cleanup.append(on_cleanup)
     return app
 
@@ -637,20 +657,23 @@ def main():
     ap.add_argument("--config", default=None, help="experiment YAML deep-merged over configs/default.yaml")
     ap.add_argument("--speed", type=float, default=1.0, help=f"multiple of {BASE_TPS:g} ticks/s; 0 = max")
     ap.add_argument("--no-agent-log", action="store_true", help="don't append a session summary to logs/AGENT_LOG.md")
+    ap.add_argument("--no-record", action="store_true", help="disable the per-tick trajectory recorder")
+    ap.add_argument("--record-obs", action="store_true", help="also store every observation (~2 KB/agent/tick)")
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=8787)
     a = ap.parse_args()
     if not (THREE / "build" / "three.module.js").exists():
         raise SystemExit("three.js missing: run `make viewer-setup` (npm install in viewer/)")
     print(f"GENESIS viewer: building world (seed {a.seed}, policy {a.policy}) ...", flush=True)
-    sim = Sim(a.seed, a.policy, a.agents, a.config, speed=a.speed, agent_log=not a.no_agent_log)
+    sim = Sim(a.seed, a.policy, a.agents, a.config, speed=a.speed, agent_log=not a.no_agent_log,
+              record=not a.no_record, record_obs=True if a.record_obs else None)
     th = start_sim_thread(sim)
     sim.ready.wait()
     print(f"world ready in {sim.build_s:.1f}s; {sim.env.population()} agents; logging to "
           f"{_rel(sim.logger.dir)}", flush=True)
     print(f"open http://{a.host}:{a.port}", flush=True)
     try:
-        web.run_app(make_app(sim), host=a.host, port=a.port, print=None)
+        web.run_app(make_app(sim), host=a.host, port=a.port, print=None, shutdown_timeout=3)
     finally:
         sim.stop_flag.set()
         th.join(timeout=10)

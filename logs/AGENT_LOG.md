@@ -136,3 +136,17 @@ no respawn), 256 founders, 3 seeds × 2 years, no other changes. Population ever
   (−60 to −85%), partial recovery next season. Persists 2 years but at ~15–30% of the founding size.
 - random: **extinct in all 3 seeds** (0.8–1.6 years); almost never well-fed enough to breed (33–75 births).
 Single quick check, not a preregistered experiment. Births are physiological (automatic when well-fed), not an action.
+
+## 2026-10-26 20:58 — Live viewer session (heuristic, seed 0)
+
+Viewer run `runs/viewer/20261026_203827_s0_heuristic`: 18636 ticks (4.85 sim years), 256 agents, policy **heuristic** (non-learning baseline).
+- deaths/agent-year 1.51; deaths by cause {'starvation': 192, 'thirst': 1050, 'cold': 290, 'fire': 55, 'predator': 288, 'old_age': 3}; population at end 256.
+- manual interventions: 0 (none). Sessions with interventions are not comparable to `run_baselines.py` numbers.
+- eating food another agent killed/dropped: 377 meals (a co-feeding count, not evidence of intentional sharing).
+
+## 2026-10-26 21:01 — Live viewer session (heuristic, seed 0)
+
+Viewer run `runs/viewer/20261026_205803_s0_heuristic`: 1814 ticks (0.47 sim years), 256 agents, policy **heuristic** (non-learning baseline).
+- deaths/agent-year 1.11; deaths by cause {'thirst': 132, 'predator': 2}; population at end 256.
+- manual interventions: 0 (none). Sessions with interventions are not comparable to `run_baselines.py` numbers.
+- eating food another agent killed/dropped: 24 meals (a co-feeding count, not evidence of intentional sharing).

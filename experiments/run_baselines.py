@@ -19,6 +19,7 @@ from sim import GenesisEnv, load_config  # noqa: E402
 from sim.constants import DEATH_NAMES  # noqa: E402
 from sim.layout import I_UID  # noqa: E402
 from sim.logger import RunLogger, append_agent_log  # noqa: E402
+from sim.recorder import TrajectoryRecorder  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 POLICIES = ["random", "greedy", "heuristic"]
@@ -34,10 +35,15 @@ def run_one(policy: str, seed: int, years: float, n_agents: int, cfg_path, out_r
     initial = env.I[env.alive, I_UID].copy()
     ticks = int(years * env.year_len)
     obs = env.observe()
+    rec = TrajectoryRecorder(env, log.dir, meta=dict(policy=policy)) if cfg.logging.trajectory else None
     t0 = time.perf_counter()
     for k in range(ticks):
+        if rec:
+            rec.pre(obs)
         a = pol.act(obs, env.alive)
         obs, r, died, info = env.step(a)
+        if rec:
+            rec.post(a, r, info, policy_state=getattr(pol, "mode", None))
         if info["born"].any():
             pol.reset(info["born"])
         if k % cfg.logging.metrics_every == 0:
@@ -45,6 +51,8 @@ def run_one(policy: str, seed: int, years: float, n_agents: int, cfg_path, out_r
         if k % 1000 == 0:
             log.collect_events()
     wall = time.perf_counter() - t0
+    if rec:
+        rec.close()
     log.collect_events()
     ev = np.concatenate(log._events) if log._events else np.zeros((0, 7))
     dur, obsd, cause = lifetimes(ev, initial, env.tick, start_tick=env.spinup_ticks)
