@@ -6,6 +6,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 
 const GradeShader = {
   uniforms: { tDiffuse: { value: null }, uRes: { value: new THREE.Vector2(1, 1) }, uTime: { value: 0 }, uTilt: { value: 0.6 },
@@ -54,6 +55,11 @@ export class Post {
     const rt = new THREE.WebGLRenderTarget(size.x, size.y, { type: THREE.HalfFloatType, samples: 4 });
     this.composer = new EffectComposer(renderer, rt);
     this.composer.addPass(new RenderPass(scene, camera));
+    // ground-truth ambient occlusion: contact shadows under bodies, in crevices and forests
+    this.gtao = new GTAOPass(scene, camera, size.x, size.y);
+    this.gtao.blendIntensity = 0.85;
+    this.gtao.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1.5, thickness: 1.0, scale: 1.0, samples: 12 });
+    this.composer.addPass(this.gtao);
     this.bloom = new UnrealBloomPass(new THREE.Vector2(size.x / 2, size.y / 2), 0.35, 0.55, 0.9);
     this.composer.addPass(this.bloom);
     this.composer.addPass(new OutputPass());
@@ -61,6 +67,7 @@ export class Post {
     this.composer.addPass(this.grade);
     this.enabled = true;
   }
+  setAO(on) { this.gtao.enabled = on; }
   setSize(w, h, pr) {
     this.composer.setPixelRatio(pr);
     this.composer.setSize(w, h);
