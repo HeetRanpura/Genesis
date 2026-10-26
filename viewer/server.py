@@ -53,9 +53,11 @@ POLICIES = ("heuristic", "greedy", "random")   # non-learning baselines
 
 
 def available_policies() -> list[str]:
-    """Baselines plus trained PPO checkpoints (runs/stage2/<run>/ckpt_latest.pt) as "ppo:<run>"."""
+    """Baselines plus trained checkpoints: agents/ppo.py runs (runs/stage2/<run>/ckpt_latest.pt) as "ppo:<run>",
+    agents/rppo.py runs (runs/stage2/<run>/checkpoints/last.pt) as "rppo:<run>"."""
     from agents.policy import trained_runs
-    return list(POLICIES) + [f"ppo:{r}" for r in trained_runs()]
+    rppo = sorted(p.parent.parent.name for p in (ROOT / "runs" / "stage2").glob("*/checkpoints/last.pt"))
+    return list(POLICIES) + [f"ppo:{r}" for r in trained_runs()] + [f"rppo:{r}" for r in rppo]
 FRAME_HZ = 30.0
 SAMPLE_EVERY = 20                    # ticks between dashboard samples (6 per sim day)
 HISTORY = 720                        # dashboard samples kept server-side (~120 sim days)
@@ -232,6 +234,9 @@ class Sim:
         if policy.startswith("ppo:"):
             from agents.policy import load_policy_agent
             self.policy = load_policy_agent(policy[4:], env.N, seed=seed, device="mps")
+        elif policy.startswith("rppo:"):
+            from agents.learned import LearnedPolicy
+            self.policy = LearnedPolicy(ROOT / "runs" / "stage2" / policy[5:] / "checkpoints" / "last.pt", env, seed=seed)
         else:
             self.policy = make_baseline(policy, env, seed=seed)
         self.obs = env.observe()
@@ -268,7 +273,7 @@ class Sim:
                                    deaths_per_agent_year=dpy, policy=self.policy_name))
         if self.agent_log and run_ticks >= env.tpd:   # only sessions of at least one sim day
             causes = {n: int(v) for n, v in zip(DEATH_NAMES, env.deaths_by_cause) if v}
-            kind = "learned PPO policy" if self.policy_name.startswith("ppo:") else "non-learning baseline"
+            kind = "learned PPO policy" if ":" in self.policy_name else "non-learning baseline"
             append_agent_log(
                 f"Live viewer session ({self.policy_name}, seed {env.seed})",
                 [f"Viewer run `{_rel(self.logger.dir)}`: {run_ticks} ticks ({years:.2f} sim years), "
@@ -457,7 +462,16 @@ class Sim:
             action=env.action_names[int(I[i, I_LAST_ACTION])] if 0 <= I[i, I_LAST_ACTION] < env.n_actions else "?",
             history=[env.action_names[a] for a in hist[-hl:]], genes=[round(float(g), 3) for g in env.G[i]],
             stats={n: round(float(v), 3) for n, v in zip(STAT_NAMES, S[i])},
+            mind=self._mind(i),
         )
+
+    def _mind(self, i: int):
+        """A learner's internals for slot i at its last decision: value estimate and action probabilities."""
+        last = getattr(self.policy, "last", None)
+        if not last:
+            return None
+        return dict(value=round(float(last["value"][i]), 4),
+                    probs={n: round(float(p), 4) for n, p in zip(self.env.action_names, last["probs"][i])})
 
     # ---------------------------------------------------------------- commands
     def _apply(self, cmd: dict):
@@ -514,7 +528,8 @@ class Sim:
         actions = self.policy.act(self.obs, env.alive)
         self.obs, rewards, _, info = env.step(actions)
         if rec:
-            rec.post(actions, rewards, info, policy_state=getattr(self.policy, "mode", None))
+            rec.post(actions, rewards, info, policy_state=getattr(self.policy, "mode", None),
+                     extras=getattr(self.policy, "last", None) or None)
         if info["born"].any():
             self.policy.reset(info["born"])
         self.agent_ticks += int(info["alive"].sum())
