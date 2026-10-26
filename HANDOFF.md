@@ -7,8 +7,10 @@ Repo: https://github.com/HeetRanpura/Genesis (branch `main`, direct commits, no 
 **Machine (since session 3): MacBook Pro M3 Pro, 11 cores, 18 GB, no CUDA.** Stages 1–1.1 were benchmarked on an
 M4 Air, so don't compare throughput across machines. Python 3.11 venv in `.venv` (`make setup`, which now also installs the viewer).
 
-**Git:** pushed to the fork `advikdivekar/Genesis-advik`. **PR #1** (viewer, recorder, analysis fix) and **PR #2** (Stage 2
-first slice, branch `stage2-ppo`, built on #1) are open on HeetRanpura/Genesis. Author: Advik Divekar only.
+**Git:** work goes as PRs from the fork `advikdivekar/Genesis` to `HeetRanpura/Genesis` main, authored by Advik Divekar only (no
+co-author trailers). PR #1 was closed after Heet re-applied its commits on a rewritten main. **PR #2** (branch
+`genesis-combined`) carries the rest: preregistration, Stage 2 results, `agents/rppo.py`, and recorder and viewer integration.
+Heet's `agents/ppo.py` (PPOTrainer) is the main learner.
 
 ## Done
 - **Stage 1: world engine** (`ce1e40e`) and **Stage 1.1: food-limited fauna, faster observations** (`3c1d52d`).
