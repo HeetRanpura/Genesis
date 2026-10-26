@@ -243,3 +243,10 @@ Both learners are about 2× better than random and greedy, and not distinguishab
 competent policy is now the energy economy (intake ≈ basal metabolism, plants only, no hunting). Training-time
 mortality curves are dominated by the world-switch and season cycles, so held-out evaluation during training is needed. Full write-up:
 `reports/stage2/STAGE2_REPORT.md`.
+
+## 2026-10-26 — Baselines reproduced on a second machine
+
+Re-ran `experiments/run_baselines.py --seeds 5 --years 2` (with the spin-up fix) on the MacBook Air M4.
+All 15 runs (3 baselines × 5 held-out seeds) match the numbers committed from the MacBook Pro M3 Pro
+bit-for-bit (random 3.83, greedy 3.31, heuristic 1.50 deaths/agent-year). The simulator is
+reproducible across machines; learner training on MPS is not (see reports/stage2/STAGE2_REPORT.md).
