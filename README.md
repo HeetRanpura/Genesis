@@ -4,7 +4,7 @@ An artificial-life testbed for one question: **what social organisation and cult
 minimally specified learning agents are rewarded only for staying alive?** Agents are never rewarded
 for anything social; sharing, grouping, signalling or norms must emerge, or be reported as absent.
 
-Status: **Stage 1 (world engine) complete**. See [PLAN.md](PLAN.md) for all stages and
+Status: **Stage 1 (world engine) complete, with Stage 1.1 tuning** (food-limited fauna; 112k steps/min with full observations for 1,000 agents). Handoff notes: [HANDOFF.md](HANDOFF.md). See [PLAN.md](PLAN.md) for all stages and
 [reports/stage1/STAGE1_REPORT.md](reports/stage1/STAGE1_REPORT.md) for the evidence.
 
 ## Setup (macOS / Linux, Python 3.11 via uv)

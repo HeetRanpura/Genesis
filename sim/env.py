@@ -392,7 +392,7 @@ class GenesisEnv:
                 self.weather = CLEAR
             self.fresh_now = self.fresh & ~(self.world["stream"] & (self.drought_left > 0))
             if hasattr(self, "img"):
-                self.refresh_img()
+                self.refresh_img(terrain_changed=False)   # fresh water may have changed (drought)
             # fire ignition
             season_f = [0.5, 1.5, 1.0, 0.2][s]
             p_fire = dc.fire_ignition_per_day * season_f * (4.0 if self.drought_left > 0 else 1.0)
@@ -439,7 +439,7 @@ class GenesisEnv:
         yy, xx = np.ogrid[:self.H, :self.W]
         region = ((yy - y) ** 2 + (xx - x) ** 2 <= radius ** 2) & self.floodplain
         self.flood[region] = np.maximum(self.flood[region], days * self.tpd)
-        self.refresh_img()
+        self.refresh_img(terrain_changed=False)
         self._log_env_event(EV_FLOOD_START, x, y, float(region.sum()))
         if source == "manual":
             self.manual_log.append(dict(tick=self.tick, kind="flood", x=x, y=y, days=days))
@@ -453,7 +453,7 @@ class GenesisEnv:
         self.drought_left = days
         self.weather = CLEAR
         self.fresh_now = self.fresh & ~self.world["stream"]
-        self.refresh_img()
+        self.refresh_img(terrain_changed=False)
         self._log_env_event(EV_DROUGHT_START, value=days)
         self.manual_log.append(dict(tick=self.tick, kind="drought", days=days))
 
@@ -462,10 +462,11 @@ class GenesisEnv:
         self._log_env_event(EV_COLD_SNAP_START, value=days)
         self.manual_log.append(dict(tick=self.tick, kind="cold_snap", days=days))
 
-    def refresh_img(self):
-        """Rebuild the observation image and line-of-sight masks from scratch (after direct edits to
-        world arrays; terrain only changes in tests)."""
-        K.build_vismask(self.terrain, self.OFF, self.PARENT, self.vismask)
+    def refresh_img(self, terrain_changed: bool = True):
+        """Rebuild the observation image from scratch (after direct edits to world arrays). The static
+        line-of-sight masks are rebuilt too unless terrain_changed=False (terrain only changes in tests)."""
+        if terrain_changed:
+            K.build_vismask(self.terrain, self.OFF, self.PARENT, self.vismask)
         K.img_rebuild(self.img, self.terrain, self.fresh_now, self.flood, self.built, self.plant, self.tree_at,
                       self.tree_fruit, float(self.cfg.resources.fruit_max), self.food_item, self.fidx, self.FI,
                       self.FF, self.fire, self.snow)

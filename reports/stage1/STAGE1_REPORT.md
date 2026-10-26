@@ -3,6 +3,90 @@
 Date: 2026-10-26 · Machine: Apple M4 (10 cores, 16 GB), Python 3.11, Numba 0.68, NumPy 2.4.
 Reproduce everything: `make test && make baselines && make evidence && make bench`.
 
+## Stage 1.1 update (user-requested tuning) — read this first
+
+Two requests: (1) make fauna food-limited instead of cap-limited, (2) push observation throughput past
+100k steps/min. Sections further below are the original Stage 1 results, kept for history.
+
+### 1. Fauna is now food-limited
+Fauna parameters moved to `configs/default.yaml: fauna`. Regulation now comes from food: energy stores,
+metabolism with winter torpor (×0.2 below 5 °C), grazing only when not sated, births only in
+spring–autumn with a full store (shared with the offspring), grazing-tolerant plant regrowth,
+and a browsing niche for large prey (without it, small prey competitively excluded them). Runs start after
+a 1-year ecological spin-up so the lush initial vegetation's boom-and-crash isn't part of the run.
+Caps and immigration floors remain only as safety rails. `experiments/fauna_diagnostics.py`, 5 seeds × 3 years:
+
+| | before | after, 256 heuristic agents | after, no agents |
+|---|---|---|---|
+| small prey: time at cap | 69% | **0%** | **0%** |
+| large prey: time at cap | 5% | **0%** | **0%** |
+| predators: time at cap | 55% | **0%** | **0%** |
+| small prey: time at floor / immigrant share of recruits | 9% / 7% | 7% / 2% | 0.3% / 0% |
+| large prey: time at floor / immigrant share | 14% / 11% | 0.6% / 0% | 13% / 6% |
+| predators: time at floor / immigrant share | 0% / 0% | **31% / 21%** | 2% / 0% |
+
+Deaths are now starvation, predation and agents' hunting. Figures: `fig9_fauna_after.png`,
+`fig9_fauna_after_no_agents.png`. **Weak spot:** with 256 heuristic agents present, predators sit
+at their floor about a third of the time. The agents cause ~half of all small-prey deaths and
+out-compete predators. Reported as found, not tuned away.
+
+### 2. Throughput (`bench.json`, median of 5 whole-day windows; random actions)
+| world | agents | dynamics only | + observations |
+|---|---|---|---|
+| 256² | 256 | 3,522 steps/s (211k/min) | 2,437 steps/s (146k/min) |
+| 256² | 1,000 | 2,860 steps/s (172k/min) | **1,867 steps/s (112k/min)** |
+| 256² | 2,000 | 2,910 steps/s (175k/min) | 1,484 steps/s (89k/min) |
+| 512² | 1,000 | 1,284 steps/s (77k/min) | 991 steps/s (59k/min) |
+
+Fair before/after: interleaved runs of the Stage 1 commit and the current tree on the same machine in the
+same thermal state (1,000 agents, 256², three rounds):
+
+| | Stage 1 | Stage 1.1 |
+|---|---|---|
+| with observations | 1,196–1,348 steps/s (72–81k/min) | **1,662–1,728 steps/s (100–104k/min)** |
+| dynamics only | 1,739–2,229 steps/s | 2,560–3,885 steps/s |
+
+How:
+- Observations are masked copies from an observation image (`env.img`) patched in place at every
+  world mutation (a test compares it with a full rebuild after long random runs).
+- Line of sight is precomputed per cell, since terrain is static.
+- One Numba call per tick (`world_tick`).
+- Small workloads use sequential twins of parallel kernels. Numba's macOS threading layer costs
+  ~60 µs per parallel launch; outputs are identical, and a test checks this.
+
+**Caveats:**
+- This is a fanless MacBook Air: sustained runs heat-throttle by 15–30%, so the A/B table is the
+  conservative figure.
+- **512² got slower than Stage 1.** Vegetation, the daily image refresh and larger fauna all scale
+  with area. This is a follow-up item; the 1,000-agent target is on the default 256² world.
+- An OpenMP threading layer was tried and rejected (slower and erratic here).
+
+### 3. Effect on the baselines (5 seeds × 2 years, 256 agents)
+| policy | deaths / agent-year (95% CI) | KM survival at 1 yr |
+|---|---|---|
+| random | 2.55 [2.36, 2.79] | 0.134 |
+| greedy | 2.21 [1.95, 2.51] | 0.163 |
+| heuristic | 1.00 [0.70, 1.41] | 0.485 |
+
+- Heuristic vs random: Hedges' g = −3.8.
+- Greedy now edges out random (g = −1.0).
+- **The heuristic got worse (0.87 → 1.00) and its thirst deaths tripled.** An ablation reverting one
+  change at a time pins this on the fauna retune. Prey are no longer artificially abundant (before:
+  capped at 1,600 with a 200-animal immigration floor), so agents eat fewer animals and more plants.
+  On seed 0: small-prey kills 1,871 → 551, meat meals 3,629 → 980, plant bites 17,382 → 31,674.
+  They spend more time foraging, and the heuristic's "food first when energy ≤ hydration" rule leaves
+  them away from water.
+- In seed 0, agents hunted small prey down to 27 animals by the end of year 1. An overexploitation
+  dynamic exists before any learning.
+
+### Bug fixed along the way
+Events from manual triggers made between steps (fire/flood/famine buttons) were wiped by the next
+step's event-counter reset. Now fixed and covered by the image-invariant test.
+
+---
+
+# Original Stage 1 results (superseded where Stage 1.1 says so)
+
 ## Acceptance criteria
 
 | Criterion (PLAN.md) | Result |
