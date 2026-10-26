@@ -8,7 +8,7 @@
         "-m",
         "viewer.server",
         "--policy",
-        "ppo:gru",
+        "ppo:gru_s0",
         "--seed",
         "0",
         "--port",
@@ -23,7 +23,7 @@
       "runtimeArgs": [
         "viewer/preview_server.py",
         "--policy",
-        "ppo:gru",
+        "heuristic",
         "--seed",
         "0",
         "--port",
