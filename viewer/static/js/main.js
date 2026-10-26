@@ -290,14 +290,35 @@ app.cycleQuality = () => {
   quality = (quality + 1) % QUALITY.length;
   document.getElementById('btn-quality').textContent = QUALITY[quality][1];
   post.setAO(quality === 0);
+  setShadowRes();
   resize();
   toast(`Render quality ${QUALITY[quality][1]} (pixel ratio ${QUALITY[quality][0].toFixed(2)})`);
 };
 document.getElementById('btn-quality').textContent = QUALITY[quality][1];
 post.setAO(quality === 0);   // ambient occlusion only in HQ (costly)
+function setShadowRes() {        // HQ: 4096 soft shadows + 4x MSAA; otherwise 2048 PCF + 2x MSAA
+  const hq = quality === 0, n = hq ? 4096 : 2048, sh = sky.light.shadow;
+  if (sh.mapSize.x !== n) { sh.mapSize.set(n, n); sh.map?.dispose(); sh.map = null; }
+  const type = hq ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+  if (renderer.shadowMap.type !== type) { renderer.shadowMap.type = type; scene.traverse((o) => { if (o.material) o.material.needsUpdate = true; }); }
+  post.setQuality(hq);
+}
+setShadowRes();
 
+// adaptive resolution: keep motion smooth by trading render scale for frame rate (like most games)
+let renderScale = 1, adaptT = 0, adaptFrames = 0;
+function adaptResolution(now) {
+  adaptFrames++;
+  if (now - adaptT < 1.5) return;
+  const fps = adaptFrames / (now - adaptT);
+  adaptT = now; adaptFrames = 0;
+  const old = renderScale;
+  if (fps < 52 && renderScale > 0.55) renderScale = Math.max(0.55, renderScale - (fps < 40 ? 0.15 : 0.08));
+  else if (fps > 58 && renderScale < 1) renderScale = Math.min(1, renderScale + 0.05);
+  if (renderScale !== old) resize();
+}
 function resize() {
-  const pr = QUALITY[quality][0];
+  const pr = QUALITY[quality][0] * renderScale;
   renderer.setPixelRatio(pr);
   renderer.setSize(innerWidth, innerHeight, false);
   post.setSize(innerWidth, innerHeight, pr);
@@ -388,7 +409,8 @@ function animate() {
     app.effects.update(dt, now, controls.target, env);
     const tilt = app.chase ? 0.12 : clamp(1.25 - dist / 140, 0.15, 1.0);
     scene.environmentIntensity = 0.06 + 0.3 * (1 - lights.night);
-    post.render(now, lights.night, tilt);
+    post.render(now, lights.night, tilt, (app.world.fireCells || []).length > 0);
+    adaptResolution(now);
     if (app.shot) {
       app.shot = false;
       canvas.toBlob((b) => { download(b, `genesis_${stamp()}.png`); toast('Screenshot saved'); });
@@ -407,4 +429,5 @@ function animate() {
 }
 animate();
 window.__app = app;
+window.__dbg = { renderer, post, scene, U };   // used by the perf/screenshot scripts
 app.cmd = (c) => net.send(c);   // used by the smoke/screenshot scripts

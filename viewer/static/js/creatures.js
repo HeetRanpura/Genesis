@@ -198,6 +198,9 @@ export class Creatures {
     this._q = new THREE.Quaternion(); this._e = new THREE.Euler(0, 0, 0, 'YXZ'); this._p = new THREE.Vector3();
     this._s = new THREE.Vector3(); this._c = new THREE.Color();
     this._zero = new THREE.Matrix4().makeScale(0, 0, 0);
+    this._torso = new THREE.Matrix4(); this._tmp = new THREE.Matrix4(); this._hip = new THREE.Matrix4();
+    this._eye = new THREE.Vector3(); this._red = new THREE.Color(0x9a2015);
+    this._carry = [null, new THREE.Color(0xd2662e), new THREE.Color(0x7a5230), new THREE.Color(0x8a8a8a)];
   }
 
   setPx(px) { this.icons.material.uniforms.uPx.value = px; this.eyes.material.uniforms.uPx.value = px; }
@@ -272,7 +275,7 @@ export class Creatures {
     const root = this._root, A1 = this._a, B1 = this._b, M = this._m, q = this._q, e = this._e, p = this._p, sc = this._s;
     const night = this.U.uNight.value;
     let k = 0, ki = 0;
-    const CARRY_COL = [null, new THREE.Color(0xd2662e), new THREE.Color(0x7a5230), new THREE.Color(0x8a8a8a)];
+    const CARRY_COL = this._carry, T1 = this._torso, TM = this._tmp, HIP = this._hip;
     const setPart = (mesh, mat, col) => { mesh.setMatrixAt(k, mat); if (col) mesh.setColorAt(k, col); };
     for (const s of this.agents.values()) {
       this._move(s, now, dt, 0.11);
@@ -317,22 +320,22 @@ export class Creatures {
       // torso: pivot at the hips, pitched forward
       A1.makeTranslation(0, hipY, 0).premultiply(root);
       e.set(torsoPitch, 0, 0); B1.makeRotationFromEuler(e);
-      const torsoM = A1.clone().multiply(B1);
+      const torsoM = T1.copy(A1).multiply(B1);
       setPart(P.torso, torsoM, s.color);
       // head: on top of the torso, nods while eating, looks up slightly when running
       e.set(-0.15 * gr + 0.35 * bend * (0.5 + 0.5 * Math.sin(t * 9 + s.uid)) - 0.2 * kneel, 0, 0);
       M.makeTranslation(0, 0.42, 0).multiply(B1.makeRotationFromEuler(e));
-      setPart(P.head, torsoM.clone().multiply(M), s.skin);
+      setPart(P.head, TM.copy(torsoM).multiply(M), s.skin);
       // arms from the shoulders
       for (const [mesh, side, ang] of [[P.armL, -1, arL], [P.armR, 1, arR]]) {
         e.set(ang, 0, side * (0.08 + 0.1 * gr));
         M.makeTranslation(side * 0.19, 0.36, 0).multiply(B1.makeRotationFromEuler(e));
-        setPart(mesh, torsoM.clone().multiply(M), s.skin);
+        setPart(mesh, TM.copy(torsoM).multiply(M), s.skin);
       }
       // legs from the hips: thigh, then shin at the knee
       for (const [thM, shM, side, th, kn] of [[P.thighL, P.shinL, -1, thL, knL], [P.thighR, P.shinR, 1, thR, knR]]) {
         e.set(th, 0, 0);
-        const hip = A1.clone().multiply(M.makeTranslation(side * 0.09, 0, 0)).multiply(B1.makeRotationFromEuler(e));
+        const hip = HIP.copy(A1).multiply(M.makeTranslation(side * 0.09, 0, 0)).multiply(B1.makeRotationFromEuler(e));
         setPart(thM, hip, s.pants);
         e.set(kn, 0, 0);
         setPart(shM, hip.multiply(M.makeTranslation(0, -THIGH, 0)).multiply(B1.makeRotationFromEuler(e)), s.pants);
@@ -368,7 +371,7 @@ export class Creatures {
     const W = this.world, root = this._root, M = this._m, B1 = this._b, q = this._q, e = this._e, p = this._p, sc = this._s, c = this._c;
     const counts = [0, 0, 0], legN = [0, 0, 0];
     let ne = 0;
-    const eye = new THREE.Vector3();
+    const eye = this._eye;
     for (const s of this.fauna.values()) {
       this._move(s, now, dt, s.sp === 0 ? 0.07 : 0.14);
       const sp = s.sp, body = this.faunaBody[sp], Q = this.Q[sp];
@@ -390,7 +393,7 @@ export class Creatures {
       root.compose(p, q, sc.set(size, size, size));
       body.setMatrixAt(j, root);
       c.copy(this.faunaBase[sp]).multiplyScalar(0.85 + s.rnd * 0.3);
-      if (sp === 1 && s.hp < 0.8) c.lerp(new THREE.Color(0x9a2015), (0.8 - s.hp) * 0.9);
+      if (sp === 1 && s.hp < 0.8) c.lerp(this._red, (0.8 - s.hp) * 0.9);
       body.setColorAt(j, c);
       const legs = this.faunaLegs[sp];
       if (legs) {
@@ -399,7 +402,7 @@ export class Creatures {
           const diag = (li === 0 || li === 3) ? 0 : Math.PI;          // trot: diagonal pairs move together
           e.set(Math.sin(s.phase + diag) * amp, 0, 0);
           M.makeTranslation(hx, Q.hipY, hz).multiply(B1.makeRotationFromEuler(e));
-          legs.setMatrixAt(legN[sp], root.clone().multiply(M));
+          legs.setMatrixAt(legN[sp], this._tmp.copy(root).multiply(M));
           legs.setColorAt(legN[sp], c);
           legN[sp]++;
         });
