@@ -1,5 +1,7 @@
 # HANDOFF — where GENESIS stands and what to do next
 
+**Advik: start with `HANDOFF_ADVIK.md`** (what changed since your PR #3 and your next tasks).
+
 Read this first, then `CLAUDE.md` (engine facts, gotchas, decisions) and `PLAN.md` (stages and acceptance
 criteria). `logs/AGENT_LOG.md` records how agents are doing. `logs/SESSION_LOG.md` records engineering sessions.
 

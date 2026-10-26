@@ -64,14 +64,9 @@ class Sim:
         cfg = load_config(overrides={"agents": {"n_initial": a.agents, "max_agents": a.agents}})
         self.env = GenesisEnv(cfg, seed=a.seed)
         if a.policy.startswith("ppo:"):
-            import torch
-            from agents.policy import ActorCritic, PolicyAgent
-            ck = torch.load(ROOT / "runs" / "stage2" / a.policy[4:] / "ckpt_latest.pt", weights_only=False,
-                            map_location="cpu")
-            model = ActorCritic(ck["obs_shapes"], ck["n_actions"], ck["hidden"], ck["core"])
-            model.load_state_dict(ck["trainer"]["model"])
-            self.policy = PolicyAgent(model, self.env.N, seed=a.seed, device="cpu")
-            self.policy_desc = f"PPO {ck['core'].upper()} ({ck['trainer']['agent_steps'] / 1e6:.1f}M agent-steps)"
+            from agents.policy import load_policy_agent
+            self.policy = load_policy_agent(a.policy[4:], self.env.N, seed=a.seed, device="cpu")
+            self.policy_desc = self.policy.description
         else:
             self.policy = make_baseline(a.policy, self.env, a.seed)
             self.policy_desc = a.policy
@@ -234,13 +229,13 @@ def make_handler(sim: Sim):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--policy", default="ppo:gru", help="ppo:<run> | heuristic | greedy | random")
+    ap.add_argument("--policy", default="ppo:gru_s0", help="ppo:<run> | heuristic | greedy | random")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--agents", type=int, default=256)
     ap.add_argument("--speed", type=float, default=20, help="ticks per second")
     ap.add_argument("--port", type=int, default=8765)
     args = ap.parse_args()
-    if args.policy.startswith("ppo:") and not (ROOT / "runs" / "stage2" / args.policy[4:] / "ckpt_latest.pt").exists():
+    if args.policy.startswith("ppo:") and not (ROOT / "runs" / "stage2" / args.policy[4:] / "checkpoints" / "last.pt").exists():
         print(f"no checkpoint for {args.policy}; falling back to the heuristic baseline")
         args.policy = "heuristic"
     sim = Sim(args)
