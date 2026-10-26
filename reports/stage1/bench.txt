@@ -1,0 +1,9 @@
+ 256x256 agents=  256 obs=False    2997.9 steps/s     179871 steps/min      767451 agent-steps/s
+ 256x256 agents=  256 obs=True     1956.2 steps/s     117371 steps/min      500782 agent-steps/s
+ 256x256 agents= 1000 obs=False    2071.8 steps/s     124306 steps/min     2071775 agent-steps/s
+ 256x256 agents= 1000 obs=True     1197.8 steps/s      71869 steps/min     1197819 agent-steps/s
+ 256x256 agents= 2000 obs=False    1572.2 steps/s      94331 steps/min     3144371 agent-steps/s
+ 256x256 agents= 2000 obs=True      565.2 steps/s      33909 steps/min     1130303 agent-steps/s
+ 512x512 agents= 1000 obs=False    1853.0 steps/s     111181 steps/min     1853010 agent-steps/s
+ 512x512 agents= 1000 obs=True      773.8 steps/s      46428 steps/min      773795 agent-steps/s
+wrote /Users/heetranpura/Genesis/reports/stage1/bench.json
