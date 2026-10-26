@@ -1,10 +1,10 @@
 PY := .venv/bin/python
 
-.PHONY: setup test bench baselines evidence stage1 viewer-setup viewer
+.PHONY: setup test bench baselines evidence stage1 viewer-setup viewer train-rppo eval-rppo
 
 setup:            ## create .venv (Python 3.11) and install
 	uv venv --python 3.11 .venv
-	uv pip install --python $(PY) -e ".[dev,viewer]"
+	uv pip install --python $(PY) -e ".[dev,viewer,learn]"
 	cd viewer && npm install --no-audit --no-fund
 
 test:
@@ -26,4 +26,10 @@ viewer-setup:     ## three.js for the live viewer (pinned in viewer/package.json
 	cd viewer && npm install --no-audit --no-fund
 
 viewer:           ## live viewer at http://localhost:8787 (SEED=, POLICY=, AGENTS=, PORT=)
-	$(PY) -m viewer.server --seed $(or $(SEED),0) --policy $(or $(POLICY),heuristic) --port $(or $(PORT),8787) $(if $(AGENTS),--agents $(AGENTS),)
+	$(PY) -m viewer.server --seed $(or $(SEED),0) --policy $(or $(POLICY),heuristic) --port $(or $(PORT),8787) $(if $(AGENTS),--agents $(AGENTS),) 
+
+train-rppo:       ## full-BPTT PPO variant, agents/rppo.py (NAME=gru_s0 ITERS=600; MEMORYLESS=1 for the ablation)
+	$(PY) experiments/train_rppo.py --name $(or $(NAME),gru_s0) --iters $(or $(ITERS),600) $(if $(MEMORYLESS),--no-memory,)
+
+eval-rppo:        ## held-out evaluation of an rppo checkpoint (NAME=gru_s0)
+	$(PY) experiments/eval_policy.py runs/stage2/$(or $(NAME),gru_s0)/checkpoints/last.pt --name $(or $(NAME),gru_s0)

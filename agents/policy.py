@@ -86,6 +86,7 @@ class PolicyAgent:
         self.reset_mask = np.ones(n_slots, bool)
         self.gen = torch.Generator().manual_seed(seed)
         self.greedy = greedy
+        self.last = {}          # value / action probabilities / log-prob of the last decision (recorder, viewer)
 
     def reset(self, mask=None):
         if mask is None:
@@ -97,12 +98,14 @@ class PolicyAgent:
     def act(self, obs, alive):
         grid = torch.from_numpy(obs["grid"]).to(self.dev)
         vec = torch.from_numpy(flatten_vec(obs)).to(self.dev)
-        logits, _, self.h = self.model.step(grid, vec, self.h, torch.from_numpy(self.reset_mask).to(self.dev))
+        logits, value, self.h = self.model.step(grid, vec, self.h, torch.from_numpy(self.reset_mask).to(self.dev))
         self.reset_mask[:] = False
         logits = logits.cpu()
-        if self.greedy:
-            return logits.argmax(1).numpy()
-        return torch.multinomial(torch.softmax(logits, 1), 1, generator=self.gen).squeeze(1).numpy()
+        probs = torch.softmax(logits, 1)
+        a = logits.argmax(1) if self.greedy else torch.multinomial(probs, 1, generator=self.gen).squeeze(1)
+        self.last = dict(value=value.float().cpu().numpy(), probs=probs.numpy(),
+                         logp=torch.log(probs.gather(1, a.unsqueeze(1)).squeeze(1) + 1e-12).numpy())
+        return a.numpy()
 
 
 def load_policy_agent(run: str, n_slots: int, seed: int = 0, device: str = "cpu",

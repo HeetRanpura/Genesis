@@ -109,6 +109,15 @@ reward, and how does its order of emergence compare with human prehistory (as st
   worlds are seeds 0-4 (held out). Commits: no Claude co-author trailers (user request); push straight
   to main; force-pushes must be run by the user.
 
+- Two learner implementations: `agents/ppo.py` (PPOTrainer, main; `experiments/train_ppo.py`/`eval_agents.py`,
+  checkpoints `runs/stage2/<run>/ckpt_latest.pt`, viewer `ppo:<run>`) and `agents/rppo.py` (full-rollout BPTT variant
+  that produced `reports/stage2/STAGE2_REPORT.md`; `train_rppo.py`/`eval_policy.py`, `checkpoints/last.pt`, viewer
+  `rppo:<run>`). Both expose `.last` (value/probs/logp) so the flight recorder and the inspector show learner internals.
+  Stage 2 first results (rppo): learners 1.58–1.80 deaths/agent-yr on held-out worlds, beat random/greedy, not
+  distinguishable from heuristic (1.50); they starve (energy ceiling). Memory cut thirst but not overall mortality.
+  Eval protocol must match `run_baselines.py`; use held-out eval (not training-time rates) for claims.
+- PRs: from the fork advikdivekar/Genesis to HeetRanpura/Genesis main; author Advik Divekar only, no co-author trailers.
+
 ## Decisions log
 - 2026-10-26: Numba (not JAX) for the engine — no CUDA on this M4; Numba multi-core gives >100k steps/min.
   PyTorch (MPS/CPU) planned for Stage 2 learners.
