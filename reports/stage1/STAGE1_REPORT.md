@@ -3,6 +3,37 @@
 Date: 2026-10-26 · Machine: Apple M4 (10 cores, 16 GB), Python 3.11, Numba 0.68, NumPy 2.4.
 Reproduce everything: `make test && make baselines && make evidence && make bench`.
 
+## Erratum (2026-10-26, session 3): baseline survival numbers below were biased; corrected
+
+`analysis/survival.lifetimes()` measured the initial cohort's lifetimes from tick 0, but since Stage 1.1 `env.tick`
+already includes the 1-year ecological spin-up, so every founder was credited with a year it never lived. Deaths
+were counted correctly; exposure was inflated, so mortality was **under-stated by ~1/3** and 1-year survival
+**over-stated**. Fixed (`start_tick=env.spinup_ticks`, regression test `test_lifetimes_start_at_run_start_not_tick_zero`)
+and `make baselines` re-run (same seeds, identical deaths by cause). The original Stage 1 numbers further down had no
+spin-up and are unaffected.
+
+| policy | deaths / agent-year, as reported | **corrected** (95% CI) | KM S(1 yr), as reported | **corrected** (95% CI) |
+|---|---|---|---|---|
+| random | 2.55 | **3.83 [3.53, 4.19]** | 0.134 | **0.001 [0.000, 0.002]** |
+| greedy | 2.21 | **3.31 [2.92, 3.77]** | 0.163 | **0.006 [0.000, 0.017]** |
+| heuristic | 1.00 | **1.50 [1.04, 2.11]** | 0.485 | **0.214 [0.102, 0.331]** |
+
+Consequences: the conclusions' direction holds (heuristic ≪ greedy < random; Hedges' g vs random −3.8 and −1.0),
+but the Stage 1.1 retune hurt the heuristic far more than reported (0.87 → **1.50**, not 1.00), and almost
+no random/greedy agent lives a full year. `fig5_baseline_survival.png` is regenerated with corrected data.
+
+### Addendum: baseline population-density sweep (`density_sweep.json`, 3 seeds × 1 yr per cell)
+| policy | 256 agents | 512 | 1,000 |
+|---|---|---|---|
+| random | 3.61 [3.12, 4.25] | 3.25 [3.13, 3.42] | 3.85 [3.52, 4.43] |
+| greedy | 3.61 [2.78, 4.71] | 3.91 [3.48, 4.17] | 5.50 [4.97, 6.21] |
+| heuristic | 1.72 [1.19, 2.46] | 1.64 [1.32, 2.08] | **4.94 [4.70, 5.39]** |
+
+These are deaths per agent-year. Mortality of the water-seeking baselines rises with density, and at 1,000 agents almost
+all of it is thirst (96% for the heuristic). Random stays flat. **At 1,000 agents the heuristic is worse than random.**
+This is consistent with congestion at scarce fresh-water cells, but that mechanism has not been tested yet. Small prey
+are hunted down to the floor at 1,000 agents. Learners must be compared with baselines at the same population size.
+
 ## Stage 1.1 update (user-requested tuning) — read this first
 
 Two requests: (1) make fauna food-limited instead of cap-limited, (2) push observation throughput past
@@ -61,16 +92,16 @@ How:
   with area. This is a follow-up item; the 1,000-agent target is on the default 256² world.
 - An OpenMP threading layer was tried and rejected (slower and erratic here).
 
-### 3. Effect on the baselines (5 seeds × 2 years, 256 agents)
+### 3. Effect on the baselines (5 seeds × 2 years, 256 agents) — **corrected values, see Erratum above**
 | policy | deaths / agent-year (95% CI) | KM survival at 1 yr |
 |---|---|---|
-| random | 2.55 [2.36, 2.79] | 0.134 |
-| greedy | 2.21 [1.95, 2.51] | 0.163 |
-| heuristic | 1.00 [0.70, 1.41] | 0.485 |
+| random | 3.83 [3.53, 4.19] (reported: 2.55) | 0.001 (reported: 0.134) |
+| greedy | 3.31 [2.92, 3.77] (reported: 2.21) | 0.006 (reported: 0.163) |
+| heuristic | 1.50 [1.04, 2.11] (reported: 1.00) | 0.214 (reported: 0.485) |
 
 - Heuristic vs random: Hedges' g = −3.8.
 - Greedy now edges out random (g = −1.0).
-- **The heuristic got worse (0.87 → 1.00) and its thirst deaths tripled.** An ablation reverting one
+- **The heuristic got worse (0.87 → 1.50 corrected; first reported as 1.00) and its thirst deaths tripled.** An ablation reverting one
   change at a time pins this on the fauna retune. Prey are no longer artificially abundant (before:
   capped at 1,600 with a 200-animal immigration floor), so agents eat fewer animals and more plants.
   On seed 0: small-prey kills 1,871 → 551, meat meals 3,629 → 980, plant bites 17,382 → 31,674.

@@ -45,7 +45,7 @@ def run_one(policy: str, seed: int, years: float, n_agents: int, cfg_path, out_r
     wall = time.perf_counter() - t0
     log.collect_events()
     ev = np.concatenate(log._events) if log._events else np.zeros((0, 7))
-    dur, obsd, cause = lifetimes(ev, initial, env.tick)
+    dur, obsd, cause = lifetimes(ev, initial, env.tick, start_tick=env.spinup_ticks)
     exposure_years = dur.sum() / env.year_len
     deaths = int(obsd.sum())
     res = dict(policy=policy, seed=seed, ticks=ticks, wall_s=round(wall, 1),

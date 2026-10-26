@@ -1,0 +1,8 @@
+{
+  "name": "genesis-viewer",
+  "private": true,
+  "description": "Static assets for the GENESIS live viewer (served by viewer/server.py; no build step)",
+  "dependencies": {
+    "three": "0.170.0"
+  }
+}

@@ -6,9 +6,10 @@ import numpy as np
 from sim.constants import EV_BIRTH, EV_DEATH
 
 
-def lifetimes(events: np.ndarray, initial_uids: np.ndarray, end_tick: int):
-    """Per-agent (duration, observed_death, cause) measured from spawn (tick 0 for the initial cohort)."""
-    start = {int(u): 0 for u in initial_uids}
+def lifetimes(events: np.ndarray, initial_uids: np.ndarray, end_tick: int, start_tick: int = 0):
+    """Per-agent (duration, observed_death, cause) measured from spawn. The initial cohort spawns at
+    `start_tick`: pass env.spinup_ticks, because env.tick already counts the ecological spin-up."""
+    start = {int(u): int(start_tick) for u in initial_uids}
     for t, typ, a, *_ in events[events[:, 1] == EV_BIRTH]:
         start[int(a)] = int(t)
     dur, obs, cause = [], [], []

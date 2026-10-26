@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GENESIS Live</title>
+<link rel="stylesheet" href="/style.css">
+<script type="importmap">
+{ "imports": { "three": "/vendor/three/build/three.module.js",
+               "three/addons/": "/vendor/three/examples/jsm/" } }
+</script>
+</head>
+<body>
+<canvas id="view"></canvas>
+
+<div id="loading">
+  <div class="logo">GENESIS</div>
+  <div id="loading-msg">connecting to simulation…</div>
+  <div class="bar"><div></div></div>
+</div>
+
+<div id="ui">
+  <header id="topbar">
+    <div class="brand">
+      <span class="logo">GENESIS</span>
+      <span class="pill" id="policy-pill" title="Agents are driven by a non-learning baseline until Stage 2 learners exist">heuristic baseline</span>
+      <span class="muted" id="seed-label"></span>
+    </div>
+    <div class="clock">
+      <span id="clock-icon">☀</span>
+      <span id="clock-text">—</span>
+      <span class="sep">·</span>
+      <span id="weather-text">—</span>
+      <span class="sep">·</span>
+      <span id="temp-text">—</span>
+      <span id="alerts"></span>
+    </div>
+    <div class="actions">
+      <select id="overlay" title="Map overlay (O)">
+        <option value="0">Overlay: none</option>
+        <option value="1">Plant biomass</option>
+        <option value="2">Agent density</option>
+        <option value="3">Fertility</option>
+      </select>
+      <button id="btn-director" title="Cinematic auto-director (C)">🎬</button>
+      <button id="btn-shot" title="Screenshot (P)">📷</button>
+      <button id="btn-rec" title="Record clip (R)">⏺</button>
+      <button id="btn-quality" title="Render quality (Q)">HQ</button>
+      <button id="btn-help" title="Help (?)">?</button>
+    </div>
+  </header>
+
+  <aside id="left">
+    <section class="panel" id="feed-panel">
+      <h3>World events</h3>
+      <ul id="feed"></ul>
+    </section>
+    <section class="panel hidden" id="inspector">
+      <div class="insp-head">
+        <span class="swatch" id="insp-swatch"></span>
+        <div>
+          <div class="insp-title" id="insp-title">Agent</div>
+          <div class="muted small" id="insp-sub"></div>
+        </div>
+        <button class="x" id="insp-close" title="Deselect (Esc)">✕</button>
+      </div>
+      <div id="insp-action" class="insp-action"></div>
+      <div id="insp-bars"></div>
+      <div class="insp-grid" id="insp-grid"></div>
+      <h4>Genes</h4>
+      <div id="insp-genes" class="genes"></div>
+      <h4>Last actions</h4>
+      <div id="insp-hist" class="chips"></div>
+      <div class="insp-buttons">
+        <button id="insp-follow">Follow (F)</button>
+      </div>
+      <p class="note">Bars are the agent's own body variables. This agent runs a hand-written baseline policy, so it has no learned internal states.</p>
+    </section>
+  </aside>
+
+  <aside id="right" class="panel">
+    <h3>Live metrics</h3>
+    <div class="muted small" id="metrics-sub" style="margin:-4px 0 8px"></div>
+    <div id="charts"></div>
+    <div id="engine" class="muted small mono"></div>
+  </aside>
+
+  <footer id="bottombar">
+    <div class="group">
+      <button id="btn-play" title="Pause / play (Space)">⏸</button>
+      <button id="btn-step" title="Single tick (.)">⏭</button>
+      <div id="speeds"></div>
+    </div>
+    <div class="group tools">
+      <button data-tool="fire" title="Start a wildfire: click the map">🔥 Fire</button>
+      <button data-tool="flood" title="Flood a river floodplain: click the map">🌊 Flood</button>
+      <button data-cmd="drought" title="10-day drought (streams dry, growth ×0.4)">☀ Drought</button>
+      <button data-cmd="cold_snap" title="5-day cold snap (−10 °C)">❄ Cold snap</button>
+      <button data-cmd="famine" title="Famine: two seasons of ×0.25 plant growth, no fruit">🥀 Famine</button>
+    </div>
+    <div class="group">
+      <button id="btn-restart" title="New world / policy">⟳ New run</button>
+    </div>
+  </footer>
+
+  <div id="minimap-wrap" class="panel"><canvas id="minimap" width="200" height="200"></canvas></div>
+  <div id="toast"></div>
+  <div id="director-caption"></div>
+  <div id="tool-hint" class="hidden"></div>
+
+  <div id="restart-dlg" class="panel modal hidden">
+    <h3>New run</h3>
+    <label>Seed <input id="rs-seed" type="number" value="0"></label>
+    <label>Policy <select id="rs-policy"></select></label>
+    <label>Agents <input id="rs-agents" type="number" min="1" max="2048" value="256"></label>
+    <p class="note">This saves the current session's logs and starts a fresh world built from the seed.</p>
+    <div class="row"><button id="rs-go">Start</button><button id="rs-cancel">Cancel</button></div>
+  </div>
+
+  <div id="help" class="panel modal hidden">
+    <h3>Controls</h3>
+    <table>
+      <tr><td>Left drag / WASD</td><td>pan</td></tr>
+      <tr><td>Right drag / Q E</td><td>rotate</td></tr>
+      <tr><td>Wheel</td><td>zoom</td></tr>
+      <tr><td>Click agent</td><td>inspect · F follow · Esc release</td></tr>
+      <tr><td>Space · . · 1–6</td><td>pause · single tick · speed</td></tr>
+      <tr><td>C · O · H</td><td>director · overlay · hide UI</td></tr>
+      <tr><td>P · R · Q</td><td>screenshot · record · quality</td></tr>
+    </table>
+    <p class="note">The simulation runs in Python (<code>viewer/server.py</code>), and this page only draws its state.
+      Every control you use is written to the run's <code>controls.jsonl</code>. Disturbances also go into the event log.
+      Playback speed never changes the simulation's results. Terrain relief, water and foliage are drawn
+      for looks. The simulation itself is a flat 2-D grid.</p>
+    <div class="row"><button id="help-close">Close</button></div>
+  </div>
+</div>
+
+<script type="module" src="/js/main.js"></script>
+</body>
+</html>
