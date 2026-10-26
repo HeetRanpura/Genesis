@@ -18,10 +18,10 @@ const GradeShader = {
     void main(){
       vec2 uv = vUv;
       float band = smoothstep(0.18, 0.62, abs(uv.y - 0.52)) * uTilt;
-      vec3 col = vec3(0.0); float wsum = 0.0;
+      vec3 col = texture2D(tDiffuse, uv).rgb; float wsum = 1.0;
       vec2 px = 1.0 / uRes;
-      for (int i = 0; i < 12; i++) {
-        float a = float(i) * 2.39996; float r = sqrt(float(i) / 12.0);
+      if (band > 0.02) for (int i = 1; i < 7; i++) {
+        float a = float(i) * 2.39996; float r = sqrt(float(i) / 6.0);
         vec2 o = vec2(cos(a), sin(a)) * r * band * 4.5 * px * (uRes.y / 1080.0) ;
         float w = 1.0 - r * 0.5;
         col += texture2D(tDiffuse, uv + o).rgb * w; wsum += w;
@@ -52,7 +52,8 @@ export class Post {
   constructor(renderer, scene, camera) {
     this.renderer = renderer;
     const size = renderer.getDrawingBufferSize(new THREE.Vector2());
-    const rt = new THREE.WebGLRenderTarget(size.x, size.y, { type: THREE.HalfFloatType, samples: 4 });
+    this.rt = new THREE.WebGLRenderTarget(size.x, size.y, { type: THREE.HalfFloatType, samples: 4 });
+    const rt = this.rt;
     this.composer = new EffectComposer(renderer, rt);
     this.composer.addPass(new RenderPass(scene, camera));
     // ground-truth ambient occlusion: contact shadows under bodies, in crevices and forests
@@ -60,7 +61,7 @@ export class Post {
     this.gtao.blendIntensity = 0.85;
     this.gtao.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1.5, thickness: 1.0, scale: 1.0, samples: 12 });
     this.composer.addPass(this.gtao);
-    this.bloom = new UnrealBloomPass(new THREE.Vector2(size.x / 2, size.y / 2), 0.35, 0.55, 0.9);
+    this.bloom = new UnrealBloomPass(new THREE.Vector2(size.x / 4, size.y / 4), 0.35, 0.55, 0.9);   // quarter-res
     this.composer.addPass(this.bloom);
     this.composer.addPass(new OutputPass());
     this.grade = new ShaderPass(GradeShader);
@@ -68,12 +69,21 @@ export class Post {
     this.enabled = true;
   }
   setAO(on) { this.gtao.enabled = on; }
+  setQuality(hq) {
+    this.hq = hq;
+    const n = hq ? 4 : 2;
+    for (const t of [this.composer.renderTarget1, this.composer.renderTarget2]) {
+      if (t.samples !== n) { t.samples = n; t.dispose(); }   // recreated at the new sample count on next use
+    }
+  }
   setSize(w, h, pr) {
     this.composer.setPixelRatio(pr);
     this.composer.setSize(w, h);
     this.grade.uniforms.uRes.value.set(w * pr, h * pr);
   }
-  render(t, night, tilt) {
+  render(t, night, tilt, fire = false) {
+    // bloom only where it shows (night glow, fire, HQ); it is a full-screen cost otherwise
+    this.bloom.enabled = this.hq || night > 0.15 || fire;
     this.grade.uniforms.uTime.value = t;
     this.grade.uniforms.uNight.value = night;
     this.grade.uniforms.uTilt.value = tilt;

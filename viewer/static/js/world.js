@@ -9,7 +9,7 @@ export function makeUniforms() {
   return {
     uTime: { value: 0 }, uField: { value: null }, uFlags: { value: null }, uOverlayTex: { value: null },
     uSeason: { value: new THREE.Vector4(1, 0, 0, 0) }, uDrought: { value: 0 }, uWet: { value: 0 }, uCloud: { value: 0 },
-    uWind: { value: 0.6 }, uOverlay: { value: 0 }, uNight: { value: 0 },
+    uWind: { value: 0.6 }, uOverlay: { value: 0 }, uNight: { value: 0 }, uDetail: { value: 1 },
     uSunDir: { value: new THREE.Vector3(0, 1, 0) }, uSunColor: { value: new THREE.Color(1, 1, 1) },
     uZenith: { value: new THREE.Color() }, uHorizon: { value: new THREE.Color() }, uAmbient: { value: new THREE.Color() },
     uFogColor: { value: new THREE.Color() }, uFogDensity: { value: 0.002 },
@@ -128,7 +128,7 @@ export class World {
     const mat = inject(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.93, metalness: 0.0 }), this.U,
       `attribute vec4 aInfo; attribute vec2 aCell; varying vec4 vInfo; varying vec2 vCell; varying vec3 vWPos; varying vec3 vWNormal;`,
       `vInfo = aInfo; vCell = aCell; vWPos = (modelMatrix * vec4(transformed, 1.0)).xyz; vWNormal = normalize(mat3(modelMatrix) * objectNormal);`,
-      `uniform sampler2D uOverlayTex; uniform int uOverlay; uniform float uDrought; uniform float uWet; uniform float uCloud;
+      `uniform sampler2D uOverlayTex; uniform int uOverlay; uniform float uDrought; uniform float uWet; uniform float uCloud; uniform float uDetail;
        varying vec4 vInfo; varying vec2 vCell; varying vec3 vWPos; varying vec3 vWNormal;
        vec3 gRamp(float t){ t = clamp(t, 0., 1.); return t < 0.5 ? mix(vec3(0.02,0.03,0.18), vec3(0.05,0.55,0.35), t*2.) : mix(vec3(0.05,0.55,0.35), vec3(1.0,0.85,0.15), t*2.-1.); }`,
       /* glsl */`
@@ -172,7 +172,7 @@ export class World {
       `,
       {
         rough: `roughnessFactor = mix(roughnessFactor, 0.32, clamp(uWet * 0.85 + gFlood, 0., 1.) * (1. - gSnow));`,
-        normal: `{ vec2 nq = vWPos.xz * 2.3; float b0 = gFbm(nq), bx = gFbm(nq + vec2(0.07, 0.)), bz = gFbm(nq + vec2(0., 0.07));
+        normal: `if (uDetail > 0.5) { vec2 nq = vWPos.xz * 2.3; float b0 = gFbm(nq), bx = gFbm(nq + vec2(0.07, 0.)), bz = gFbm(nq + vec2(0., 0.07));
                    float nb = gNoise(vWPos.xz * 9.0) - gNoise(vWPos.xz * 9.0 + vec2(0.05, 0.0));
                    vec3 bw = vec3((b0 - bx) * 0.9 + nb * 0.25, 0.0, (b0 - bz) * 0.9) * (1.0 - gSnow * 0.7);
                    normal = normalize(normal + (viewMatrix * vec4(bw, 0.0)).xyz); }`,
@@ -233,7 +233,7 @@ export class World {
           vec3 R = reflect(-V, n);
           vec3 sky = mix(uHorizon, uZenith, smoothstep(0.0, 0.6, R.y));
           float d = smoothstep(0.0, 3.2, vDepth);
-          vec3 lightc = uAmbient + uSunColor * max(uSunDir.y, 0.0) * 0.55;
+          vec3 lightc = max(uAmbient + uSunColor * max(uSunDir.y, 0.0) * 0.55, vec3(0.16, 0.2, 0.26));
           vec3 body = mix(vec3(0.09, 0.34, 0.32), vec3(0.012, 0.06, 0.11), d) * lightc;
           vec3 col = mix(body, sky, fres * 0.85);
           float sd = max(dot(R, uSunDir), 0.0);
@@ -303,10 +303,10 @@ export class World {
     const conifer = mergeGeometries([
       this._part(new THREE.CylinderGeometry(0.05, 0.09, 0.7, 6).translate(0, 0.35, 0), 0),
       ...[[0.6, 0.62, 0.7], [0.52, 0.58, 1.0], [0.43, 0.54, 1.3], [0.33, 0.5, 1.6], [0.22, 0.46, 1.88]].map(([r, h, y]) =>
-        this._part(new THREE.ConeGeometry(r, h, 10, 1, true).translate(0, y, 0), 1)),
+        this._part(new THREE.ConeGeometry(r, h, 8, 1, true).translate(0, y, 0), 1)),
     ]);
-    const blob = (r, x, y, z, seed) => {   // lumpy, smooth-shaded canopy cluster
-      const g = new THREE.IcosahedronGeometry(r, 2);
+    const blob = (r, x, y, z, seed, detail = 1) => {   // lumpy, smooth-shaded canopy cluster
+      const g = new THREE.IcosahedronGeometry(r, detail);
       const pos = g.attributes.position;
       for (let i = 0; i < pos.count; i++) {
         const vx = pos.getX(i), vy = pos.getY(i), vz = pos.getZ(i);
@@ -319,7 +319,7 @@ export class World {
     const broad = mergeGeometries([
       this._part(new THREE.CylinderGeometry(0.06, 0.12, 0.95, 7).translate(0, 0.47, 0), 0),
       this._part(new THREE.CylinderGeometry(0.03, 0.05, 0.5, 5).rotateZ(0.7).translate(0.2, 0.95, 0), 0),
-      blob(0.58, 0, 1.2, 0, 1), blob(0.42, 0.36, 1.0, 0.14, 2), blob(0.4, -0.32, 1.05, -0.18, 3), blob(0.34, 0.05, 1.55, -0.1, 4),
+      blob(0.6, 0, 1.2, 0, 1, 1), blob(0.42, 0.36, 1.0, 0.14, 2, 0), blob(0.4, -0.32, 1.05, -0.18, 3, 0),
     ]);
     const fruitTrees = new Map();
     for (let k = 0; k < this.treeX.length; k++) fruitTrees.set(this.treeY[k] * W + this.treeX[k], k);
@@ -630,13 +630,21 @@ export class World {
   // agent-density overlay: exponentially decaying visit counts
   updateDensity(agents, n) {
     const d = this.densF, tr = this.trailF, W = this.W;
-    for (let i = 0; i < d.length; i++) { d[i] *= 0.985; tr[i] *= 0.9995; }
     for (let k = 0; k < n; k++) {
       const i = agents[k * 8 + 1] * W + agents[k * 8];
       d[i] += 1; tr[i] += 1;
     }
+    this._densTicks = (this._densTicks || 0) + 1;
+    const now = performance.now();
+    if (now - (this._densT || 0) < 250) return;              // decay + texture upload at most 4x per second
+    this._densT = now;
+    const kd = Math.pow(0.985, this._densTicks), kt = Math.pow(0.9995, this._densTicks);
+    this._densTicks = 0;
     const out = this.densData;
-    for (let i = 0; i < d.length; i++) { out[i * 2] = Math.min(255, d[i] * 6); out[i * 2 + 1] = Math.min(255, tr[i] * 3); }
+    for (let i = 0; i < d.length; i++) {
+      d[i] *= kd; tr[i] *= kt;
+      out[i * 2] = d[i] * 6 > 255 ? 255 : d[i] * 6; out[i * 2 + 1] = tr[i] * 3 > 255 ? 255 : tr[i] * 3;
+    }
     this.densTex.needsUpdate = true;
   }
 
