@@ -7,6 +7,7 @@ from sim.constants import GRASS, NOOP
 from sim.layout import A_ENERGY, A_HEALTH, A_HYDRATION, A_WARMTH, F_ALIVE, I_ALIVE, I_LIFESPAN
 
 SMALL = {
+    "time": {"spinup_years": 0.0},
     "world": {"width": 64, "height": 64},
     "agents": {"n_initial": 8, "max_agents": 16, "respawn": False},
     "fauna": {"small_prey": {"initial": 30, "min": 0, "max": 60},
@@ -49,6 +50,7 @@ def clear_world(env, terrain=GRASS):
     env.famine_left = env.drought_left = env.cold_snap_left = 0
     env.cfg.disturbances.fire_ignition_per_day = 0.0
     env.cfg.disturbances.famine_prob_per_year = 0.0
+    env.refresh_img()
 
 
 def put_agent(env, slot, x, y, energy=0.8, hydration=0.8, warmth=0.8, uid=None):

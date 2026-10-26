@@ -96,7 +96,7 @@ def test_thirst_kills_and_is_logged(env):
 
 
 def _put_large_prey(env, x, y):
-    j = K._spawn_fauna(LARGE_PREY, x, y, 1.0, env.FF, env.FI, env.fidx, env.fcount)
+    j = K._spawn_fauna(LARGE_PREY, x, y, 1.0, env.FF, env.FI, env.fidx, env.fcount, env.img)
     assert j >= 0
     return j
 
@@ -166,23 +166,39 @@ def test_seasonal_plant_growth():
 def test_occlusion_by_mountain(env):
     put_agent(env, 0, 20, 20)
     env.plant[20, 23] = 1.0
+    env.refresh_img()
     obs = env.observe()
     R = env.R
-    assert obs["grid"][0, 0, R, R + 3] == 255          # visible
-    assert obs["grid"][0, 6, R, R + 3] > 200          # plant seen
+    assert obs["grid"][0, R, R + 3, 0] == 255          # visible
+    assert obs["grid"][0, R, R + 3, 6] > 200          # plant seen
     env.terrain[20, 22] = MOUNTAIN
+    env.refresh_img()
     obs = env.observe()
-    assert obs["grid"][0, 0, R, R + 3] == 0           # hidden behind mountain
-    assert obs["grid"][0, 6, R, R + 3] == 0
+    assert obs["grid"][0, R, R + 3, 0] == 0           # hidden behind mountain
+    assert obs["grid"][0, R, R + 3, 6] == 0
+    assert obs["grid"][0, R, R + 2, 1] == 255         # the mountain itself is seen (blocked)
 
 
 def test_dense_forest_occludes(env):
     put_agent(env, 0, 20, 20)
     env.terrain[20, 21:23] = FOREST
+    env.refresh_img()
     obs = env.observe()
     R = env.R
-    assert obs["grid"][0, 0, R, R + 2] == 255   # first forest cell after one forest cell: visible
-    assert obs["grid"][0, 0, R, R + 4] == 0     # behind two forest cells: hidden
+    assert obs["grid"][0, R, R + 2, 0] == 255   # forest cell seen through one forest cell
+    assert obs["grid"][0, R, R + 3, 0] == 0     # behind two forest cells: hidden
+    assert obs["grid"][0, R, R + 4, 0] == 0
+
+
+def test_shadow_is_cast_diagonally(env):
+    put_agent(env, 0, 20, 20)
+    env.terrain[21, 21] = MOUNTAIN
+    env.refresh_img()
+    obs = env.observe()
+    R = env.R
+    assert obs["grid"][0, R + 1, R + 1, 0] == 255     # mountain visible
+    assert obs["grid"][0, R + 3, R + 3, 0] == 0       # cell behind it on the diagonal hidden
+    assert obs["grid"][0, R - 3, R - 3, 0] == 255     # opposite diagonal clear
 
 
 def test_fire_spreads_and_burns_out(env):

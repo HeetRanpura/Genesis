@@ -33,6 +33,22 @@ reward, and how does its order of emergence compare with human prehistory (as st
 `make setup` · `make test` · `make bench` · `make baselines` · `make evidence` (Python is `.venv/bin/python`, 3.11).
 
 ## Engine facts / gotchas
+- One tick = `GenesisEnv._climate_tick` (Python) + ONE Numba call `kernels.world_tick` that runs agents ->
+  fauna -> vegetation/trees -> fire -> rewards -> births/respawns -> reward masks -> event tally -> obs.
+  Keep per-tick work inside it: each extra Python-side kernel dispatch with many arrays costs ~5-10 us.
+- Observations are channel-last `grid[agent, y, x, c]`. They are masked copies of `env.img[y, x, 16]`,
+  an image of every observer-independent channel that is **patched in place at every world mutation
+  site** (`img_*` helpers in kernels.py). If you add a mutation of plant/food/fruit/fauna/fire/snow/
+  flood/built/fresh water, update img there too. `tests/test_engine.py::test_incremental_obs_image_matches_rebuild`
+  catches drift. After editing world arrays directly (tests), call `env.refresh_img()` (also rebuilds
+  the static line-of-sight masks `env.vismask`).
+- Line of sight is precomputed per cell (`build_vismask`, terrain is static): parent-chain propagation.
+- Sequential/parallel twins (`prey_proposals[_seq]`, `fire_step[_seq]`): Numba's macOS "workqueue" layer
+  costs ~60 us per parallel launch, so small workloads run sequentially; outputs must stay identical
+  (`test_sequential_and_parallel_twins_agree`). NEVER build a twin with `njit(cache=True)(f.py_func)`:
+  it shares f's on-disk cache entry and silently overwrites it (this produced misleading benchmarks once).
+- OpenMP threading layer was tried and rejected (slower and erratic here); stay on workqueue.
+- Runs start after `time.spinup_years` (default 1) of ecology without agents; events/stats are reset.
 - Agents occupy fixed slots (`max_agents`). `info["born"]` marks slots holding a NEW agent this tick
   (reset recurrent state there). A slot that died and was refilled in the same tick still reports
   the dead agent's reward/done (death penalty is not lost).
@@ -40,21 +56,32 @@ reward, and how does its order of emergence compare with human prehistory (as st
 - Adding a scalar param: append to the `P_*` tuple in `layout.py`, bump `NP`, set it in
   `GenesisEnv._fill_static_params` (or `_climate_tick` if dynamic).
 - Adding an event type: append to `EVENT_NAMES` and the tuple in `constants.py` (log format!).
-- Fauna update = `build_threat_grid` → `prey_proposals` (parallel, simultaneous decisions) →
-  `fauna_step` (sequential resolve + predators + births). Vegetation advances every `time.veg_every` ticks.
+- Fauna update = `build_threat_grid` → `prey_proposals` (simultaneous decisions) → `fauna_step`
+  (sequential resolve + predators + births). All fauna parameters live in `configs/default.yaml: fauna`
+  (packed into `env.FP`, columns `FP_*` in layout.py); demographic counters in `env.fstat` (`FS_*`).
+  Vegetation advances every `time.veg_every` (8) ticks with dt scaling.
+- Fauna tuning check: `experiments/fauna_diagnostics.py` (caps should never bind; report floor time).
 - Numba compile on first run ~20–40 s (cached in `__pycache__` afterwards).
 - `fcount` has 4 entries: 3 species counts + a rotating free-slot hint.
+- This machine is a fanless MacBook Air M4: sustained runs heat-throttle (~15-30% slower). Compare
+  performance only with interleaved A/B runs in the same thermal state; quote medians.
 - Test arenas: `tests/helpers.py` (`make_env`, `clear_world`, `put_agent`) — 64×64, no respawn,
   disturbances neutralised.
 
 ## Status (update as stages land)
-- Stage 1 world engine: built, tested (38 tests), benchmarked, evidence in `reports/stage1/`.
-  Awaiting user review before Stage 2.
-- Known limitations: fauna populations often sit at their caps (cap-limited rather than food-limited);
-  greedy baseline ≈ random (water usually out of view → needs memory); wildfires can burn ~10% of land.
+- Stage 1 world engine: built, tested, benchmarked, evidence in `reports/stage1/`.
+- Stage 1.1 (2026-10-26): fauna made food-limited (caps never bind), observation path rewritten
+  (incremental obs image, static line-of-sight masks, fused world_tick) -> >=100k steps/min with obs at
+  1,000 agents even when throttled. 41 tests. Awaiting user review before Stage 2.
+- Known limitations: predators sit at their immigration floor ~30% of the time when 256 heuristic
+  agents compete with them for small prey; greedy baseline ≈ random (water usually out of view → needs
+  memory); wildfires can burn ~10% of land.
 
 ## Decisions log
 - 2026-10-26: Numba (not JAX) for the engine — no CUDA on this M4; Numba multi-core gives >100k steps/min.
   PyTorch (MPS/CPU) planned for Stage 2 learners.
 - 2026-10-26: Ocean is salt water; fresh water only from rivers/streams/lakes (makes water spatially scarce).
 - 2026-10-26: Large prey require ≥2 attackers by default (stag-hunt pressure); ablation switch exists.
+- 2026-10-26: Fauna regulation by food: seasonal breeding (spring-autumn), torpor (x0.2 metabolism below
+  5 C), grazing-tolerant plant regrowth (seed floor 0.1), large-prey browsing niche (else small prey
+  exclude them), 1-year ecological spin-up. Caps/floors are safety rails only.

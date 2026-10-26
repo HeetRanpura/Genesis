@@ -1,0 +1,405 @@
+{
+  "args": {
+    "seeds": 5,
+    "years": 3.0,
+    "agents": 0,
+    "tag": "after_no_agents"
+  },
+  "per_seed": [
+    {
+      "seed": 0,
+      "small_prey": {
+        "mean": 833.4791666666666,
+        "min": 27,
+        "max": 4012,
+        "cap": 5000,
+        "floor": 10,
+        "frac_time_at_cap": 0.0,
+        "frac_time_at_floor": 0.0,
+        "immigrant_share_of_recruits": 0.0,
+        "death_causes": {
+          "starved": 0.766,
+          "old_age": 0.0,
+          "fire": 0.015,
+          "eaten": 0.219,
+          "hunted": 0.0
+        },
+        "births": 12988,
+        "immigrants": 0,
+        "starved": 9693,
+        "old_age": 0,
+        "fire": 191,
+        "eaten": 2766,
+        "hunted": 0
+      },
+      "large_prey": {
+        "mean": 20.397569444444443,
+        "min": 4,
+        "max": 78,
+        "cap": 3000,
+        "floor": 4,
+        "frac_time_at_cap": 0.0,
+        "frac_time_at_floor": 0.20833333333333334,
+        "immigrant_share_of_recruits": 0.041176470588235294,
+        "death_causes": {
+          "starved": 0.509,
+          "old_age": 0.0,
+          "fire": 0.006,
+          "eaten": 0.486,
+          "hunted": 0.0
+        },
+        "births": 163,
+        "immigrants": 7,
+        "starved": 88,
+        "old_age": 0,
+        "fire": 1,
+        "eaten": 84,
+        "hunted": 0
+      },
+      "predators": {
+        "mean": 16.23784722222222,
+        "min": 2,
+        "max": 41,
+        "cap": 150,
+        "floor": 2,
+        "frac_time_at_cap": 0.0,
+        "frac_time_at_floor": 0.06944444444444445,
+        "immigrant_share_of_recruits": 0.0,
+        "death_causes": {
+          "starved": 0.94,
+          "old_age": 0.0,
+          "fire": 0.06,
+          "eaten": 0.0,
+          "hunted": 0.0
+        },
+        "births": 55,
+        "immigrants": 0,
+        "starved": 47,
+        "old_age": 0,
+        "fire": 3,
+        "eaten": 0,
+        "hunted": 0
+      }
+    },
+    {
+      "seed": 1,
+      "small_prey": {
+        "mean": 870.6354166666666,
+        "min": 10,
+        "max": 2292,
+        "cap": 5000,
+        "floor": 10,
+        "frac_time_at_cap": 0.0,
+        "frac_time_at_floor": 0.013888888888888888,
+        "immigrant_share_of_recruits": 0.0002318930200200974,
+        "death_causes": {
+          "starved": 0.696,
+          "old_age": 0.0,
+          "fire": 0.001,
+          "eaten": 0.303,
+          "hunted": 0.0
+        },
+        "births": 12934,
+        "immigrants": 3,
+        "starved": 8737,
+        "old_age": 0,
+        "fire": 12,
+        "eaten": 3802,
+        "hunted": 0
+      },
+      "large_prey": {
+        "mean": 61.00868055555556,
+        "min": 4,
+        "max": 158,
+        "cap": 3000,
+        "floor": 4,
+        "frac_time_at_cap": 0.0,
+        "frac_time_at_floor": 0.012152777777777778,
+        "immigrant_share_of_recruits": 0.0,
+        "death_causes": {
+          "starved": 0.476,
+          "old_age": 0.0,
+          "fire": 0.0,
+          "eaten": 0.524,
+          "hunted": 0.0
+        },
+        "births": 332,
+        "immigrants": 0,
+        "starved": 137,
+        "old_age": 0,
+        "fire": 0,
+        "eaten": 151,
+        "hunted": 0
+      },
+      "predators": {
+        "mean": 24.67013888888889,
+        "min": 6,
+        "max": 46,
+        "cap": 150,
+        "floor": 2,
+        "frac_time_at_cap": 0.0,
+        "frac_time_at_floor": 0.0,
+        "immigrant_share_of_recruits": 0.0,
+        "death_causes": {
+          "starved": 0.967,
+          "old_age": 0.0,
+          "fire": 0.033,
+          "eaten": 0.0,
+          "hunted": 0.0
+        },
+        "births": 108,
+        "immigrants": 0,
+        "starved": 119,
+        "old_age": 0,
+        "fire": 4,
+        "eaten": 0,
+        "hunted": 0
+      }
+    },
+    {
+      "seed": 2,
+      "small_prey": {
+        "mean": 792.5104166666666,
+        "min": 74,
+        "max": 2056,
+        "cap": 5000,
+        "floor": 10,
+        "frac_time_at_cap": 0.0,
+        "frac_time_at_floor": 0.0,
+        "immigrant_share_of_recruits": 0.0,
+        "death_causes": {
+          "starved": 0.575,
+          "old_age": 0.0,
+          "fire": 0.021,
+          "eaten": 0.404,
+          "hunted": 0.0
+        },
+        "births": 12941,
+        "immigrants": 0,
+        "starved": 7403,
+        "old_age": 0,
+        "fire": 274,
+        "eaten": 5204,
+        "hunted": 0
+      },
+      "large_prey": {
+        "mean": 28.567708333333332,
+        "min": 4,
+        "max": 138,
+        "cap": 3000,
+        "floor": 4,
+        "frac_time_at_cap": 0.0,
+        "frac_time_at_floor": 0.25,
+        "immigrant_share_of_recruits": 0.09016393442622951,
+        "death_causes": {
+          "starved": 0.012,
+          "old_age": 0.0,
+          "fire": 0.0,
+          "eaten": 0.988,
+          "hunted": 0.0
+        },
+        "births": 222,
+        "immigrants": 22,
+        "starved": 3,
+        "old_age": 0,
+        "fire": 0,
+        "eaten": 248,
+        "hunted": 0
+      },
+      "predators": {
+        "mean": 37.9375,
+        "min": 12,
+        "max": 65,
+        "cap": 150,
+        "floor": 2,
+        "frac_time_at_cap": 0.0,
+        "frac_time_at_floor": 0.0,
+        "immigrant_share_of_recruits": 0.0,
+        "death_causes": {
+          "starved": 0.981,
+          "old_age": 0.0,
+          "fire": 0.019,
+          "eaten": 0.0,
+          "hunted": 0.0
+        },
+        "births": 187,
+        "immigrants": 0,
+        "starved": 151,
+        "old_age": 0,
+        "fire": 3,
+        "eaten": 0,
+        "hunted": 0
+      }
+    },
+    {
+      "seed": 3,
+      "small_prey": {
+        "mean": 1024.920138888889,
+        "min": 14,
+        "max": 3337,
+        "cap": 5000,
+        "floor": 10,
+        "frac_time_at_cap": 0.0,
+        "frac_time_at_floor": 0.0,
+        "immigrant_share_of_recruits": 0.0,
+        "death_causes": {
+          "starved": 0.754,
+          "old_age": 0.0,
+          "fire": 0.017,
+          "eaten": 0.229,
+          "hunted": 0.0
+        },
+        "births": 16479,
+        "immigrants": 0,
+        "starved": 12436,
+        "old_age": 0,
+        "fire": 277,
+        "eaten": 3784,
+        "hunted": 0
+      },
+      "large_prey": {
+        "mean": 30.993055555555557,
+        "min": 4,
+        "max": 59,
+        "cap": 3000,
+        "floor": 4,
+        "frac_time_at_cap": 0.0,
+        "frac_time_at_floor": 0.010416666666666666,
+        "immigrant_share_of_recruits": 0.015306122448979591,
+        "death_causes": {
+          "starved": 0.512,
+          "old_age": 0.0,
+          "fire": 0.035,
+          "eaten": 0.453,
+          "hunted": 0.0
+        },
+        "births": 193,
+        "immigrants": 3,
+        "starved": 87,
+        "old_age": 0,
+        "fire": 6,
+        "eaten": 77,
+        "hunted": 0
+      },
+      "predators": {
+        "mean": 19.348958333333332,
+        "min": 2,
+        "max": 48,
+        "cap": 150,
+        "floor": 2,
+        "frac_time_at_cap": 0.0,
+        "frac_time_at_floor": 0.020833333333333332,
+        "immigrant_share_of_recruits": 0.0,
+        "death_causes": {
+          "starved": 0.982,
+          "old_age": 0.0,
+          "fire": 0.018,
+          "eaten": 0.0,
+          "hunted": 0.0
+        },
+        "births": 85,
+        "immigrants": 0,
+        "starved": 55,
+        "old_age": 0,
+        "fire": 1,
+        "eaten": 0,
+        "hunted": 0
+      }
+    },
+    {
+      "seed": 4,
+      "small_prey": {
+        "mean": 777.9600694444445,
+        "min": 24,
+        "max": 2422,
+        "cap": 5000,
+        "floor": 10,
+        "frac_time_at_cap": 0.0,
+        "frac_time_at_floor": 0.0,
+        "immigrant_share_of_recruits": 0.0,
+        "death_causes": {
+          "starved": 0.653,
+          "old_age": 0.0,
+          "fire": 0.035,
+          "eaten": 0.311,
+          "hunted": 0.0
+        },
+        "births": 12366,
+        "immigrants": 0,
+        "starved": 7708,
+        "old_age": 1,
+        "fire": 417,
+        "eaten": 3670,
+        "hunted": 0
+      },
+      "large_prey": {
+        "mean": 12.77951388888889,
+        "min": 4,
+        "max": 37,
+        "cap": 3000,
+        "floor": 4,
+        "frac_time_at_cap": 0.0,
+        "frac_time_at_floor": 0.1909722222222222,
+        "immigrant_share_of_recruits": 0.16417910447761194,
+        "death_causes": {
+          "starved": 0.079,
+          "old_age": 0.0,
+          "fire": 0.024,
+          "eaten": 0.897,
+          "hunted": 0.0
+        },
+        "births": 112,
+        "immigrants": 22,
+        "starved": 10,
+        "old_age": 0,
+        "fire": 3,
+        "eaten": 113,
+        "hunted": 0
+      },
+      "predators": {
+        "mean": 23.828125,
+        "min": 6,
+        "max": 78,
+        "cap": 150,
+        "floor": 2,
+        "frac_time_at_cap": 0.0,
+        "frac_time_at_floor": 0.0,
+        "immigrant_share_of_recruits": 0.0,
+        "death_causes": {
+          "starved": 0.732,
+          "old_age": 0.0,
+          "fire": 0.268,
+          "eaten": 0.0,
+          "hunted": 0.0
+        },
+        "births": 115,
+        "immigrants": 0,
+        "starved": 101,
+        "old_age": 0,
+        "fire": 37,
+        "eaten": 0,
+        "hunted": 0
+      }
+    }
+  ],
+  "mean_over_seeds": {
+    "small_prey": {
+      "mean": 859.9010416666666,
+      "frac_time_at_cap": 0.0,
+      "frac_time_at_floor": 0.0027777777777777775,
+      "immigrant_share_of_recruits": 4.637860400401948e-05
+    },
+    "large_prey": {
+      "mean": 30.749305555555555,
+      "frac_time_at_cap": 0.0,
+      "frac_time_at_floor": 0.134375,
+      "immigrant_share_of_recruits": 0.06216512638821127
+    },
+    "predators": {
+      "mean": 24.40451388888889,
+      "frac_time_at_cap": 0.0,
+      "frac_time_at_floor": 0.018055555555555554,
+      "immigrant_share_of_recruits": 0.0
+    }
+  }
+}

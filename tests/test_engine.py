@@ -134,7 +134,7 @@ def test_observation_shapes_and_dead_slots_zero():
     env = make_env()
     obs = env.observe()
     R = env.R
-    assert obs["grid"].shape == (env.N, 16, 2 * R + 1, 2 * R + 1)
+    assert obs["grid"].shape == (env.N, 2 * R + 1, 2 * R + 1, 16)
     assert obs["self"].shape == (env.N, 13)
     dead = ~env.alive
     assert obs["grid"][dead].sum() == 0
@@ -146,10 +146,10 @@ def test_night_shrinks_view():
     put_agent(env, 0, 20, 20)
     env.tick = env.tpd // 4      # noon
     env._climate_tick(False)
-    day_vis = int((env.observe()["grid"][0, 0] > 0).sum())
+    day_vis = int((env.observe()["grid"][0, :, :, 0] > 0).sum())
     env.tick = 3 * env.tpd // 4  # midnight
     env._climate_tick(False)
-    night_vis = int((env.observe()["grid"][0, 0] > 0).sum())
+    night_vis = int((env.observe()["grid"][0, :, :, 0] > 0).sum())
     assert night_vis < day_vis
 
 
@@ -180,3 +180,58 @@ def test_manual_disturbances_logged(kind):
         env.trigger_cold_snap(3)
         assert env.global_temp() < t0 - 5
     assert env.manual_log[-1]["kind"] == kind
+
+
+# ---------------------------------------------------------------- observation image invariant
+def test_incremental_obs_image_matches_rebuild():
+    """img is patched in place at every mutation site; it must equal a from-scratch rebuild."""
+    cfg = load_config(overrides={"agents": {"n_initial": 300, "max_agents": 300},
+                                 "capabilities": {"niche_construction": True, "aggression": True,
+                                                  "communication": True, "reproduction": True}})
+    env = GenesisEnv(cfg, seed=2)
+    rng = np.random.default_rng(0)
+    ry, rx = np.nonzero(env.world["river"])
+    forest = np.argwhere(env.terrain == 5)
+    for k in range(1600):
+        if k == 100:
+            env.trigger_fire(int(forest[len(forest) // 2][1]), int(forest[len(forest) // 2][0]))
+        if k == 300:
+            env.trigger_flood(int(rx[10]), int(ry[10]), days=2)
+        env.step(rng.integers(0, env.n_actions, env.N), compute_obs=(k % 97 == 0))
+        if k in (150, 333, 801, 1599):
+            inc = env.img.copy()
+            env.refresh_img()
+            assert np.array_equal(inc, env.img), f"img drift at tick {k}: channels {np.unique(np.argwhere(inc != env.img)[:, 2])}"
+    assert env.ev_counts[13] >= 1 and env.ev_counts[14] >= 1   # manual fire + flood were logged
+
+
+def test_sequential_and_parallel_twins_agree():
+    """env.step picks prey_proposals / fire_step or their sequential twins by workload size; the
+    choice must not change results."""
+    from sim import kernels as K
+    env = GenesisEnv(load_config(overrides={"agents": {"n_initial": 200, "max_agents": 200}}), seed=4)
+    rng = np.random.default_rng(1)
+    for _ in range(50):
+        env.step(rng.integers(0, env.n_actions, env.N), compute_obs=False)
+    K.build_threat_grid(env.I, env.FI, env.tgrid)
+    args = (env.P, env.FF, env.FI, env.fidx, env.occ, env.terrain, env.plant, env.built, env.fire, env.tgrid)
+    a, b = env.fprop.copy(), env.fprop.copy()
+    K.prey_proposals(*args, a)
+    K.prey_proposals_seq(*args, b)
+    assert np.array_equal(a, b)
+
+    forest = np.argwhere(env.terrain == 5)
+    y, x = forest[len(forest) // 2]
+    env.plant[:] = np.maximum(env.plant, 0.5 * env.fertility)
+    env.trigger_fire(int(x), int(y))
+    states = []
+    for kernel in (K.fire_step, K.fire_step_seq):
+        arrs = [env.fire.copy(), env.ignite.copy(), env.plant.copy(), env.wood.copy(), env.built.copy(),
+                env.img.copy(), env.fire_box.copy(), env._row_min.copy(), env._row_max.copy()]
+        fire, ign, plant, wood, built, img, box, rmin, rmax = arrs
+        for t in range(40):
+            env.P[1] = 1000 + t
+            kernel(env.P, 0.3, 30, 1.2, fire, ign, env.terrain, plant, wood, built, env.flood, img, box, rmin, rmax)
+        states.append([fire, plant, wood, img, box])
+    for u, v in zip(*states):
+        assert np.array_equal(u, v)

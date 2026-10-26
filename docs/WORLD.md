@@ -27,8 +27,9 @@ quantile) → biomes.
 
 ## Resources
 - **Plants**: logistic regrowth toward per-cell fertility, scaled by season (1.2/1.0/0.55/0.05),
-  rain (+25 %), drought (×0.4), famine (×0.25) and temperature (none below 2 °C). EAT bites 0.25
-  biomass → 0.03 energy. `resource_layout: uniform` flattens fertility (Stage 7 A ablation).
+  rain (+25 %), drought (×0.4), famine (×0.25) and temperature (none below 2 °C). Grazed cells
+  regrow from a floor of 10 % of capacity (roots). EAT bites 0.25 biomass → 0.03 energy.
+  `resource_layout: uniform` flattens fertility (Stage 7 A ablation).
 - **Fruit trees**: each fruits in one season (spring/summer/autumn), up to 6 fruit, rot otherwise;
   EAT or PICKUP from an adjacent tree. Fire kills trees for ~2 years. Famine stops fruiting.
 - **Carcasses / dropped food** (`food_item` grid): spoil linearly. Each cell remembers the uid of
@@ -37,15 +38,23 @@ quantile) → biomes.
   (level 0–3; +4 °C per level, rain cover, level ≥ 2 repels predators; decays slowly; fire destroys).
 
 ## Fauna (scripted animals = the environment, never the agents)
-- **Small prey** graze, flee agents/predators within 4 cells, reproduce when fed. HUNT adjacent:
-  60 % kill → 0.30 energy carcass. One agent can do this.
-- **Large prey** loosely herd, flee within 3, heal over time. Each HUNT hit does 0.35 damage.
+Populations are **food-limited**: every animal has an energy store, a metabolism (×0.2 torpor below
+5 °C), grazes only when not sated, and gives birth (spring–autumn) only with a full store, splitting it
+with the offspring. All parameters are in `configs/default.yaml: fauna`. Caps and immigration floors
+remain as safety rails; `experiments/fauna_diagnostics.py` measures how often they bind.
+- **Small prey** graze, flee agents/predators within 4 cells, wander when their patch is grazed out.
+  HUNT adjacent: 60 % kill → 0.30 energy carcass. One agent can do this.
+- **Large prey** graze and also browse woody forage in forests (a resource small prey cannot use —
+  without it small prey competitively exclude them), loosely herd, flee within 3, heal over time.
+  Each HUNT hit does 0.35 damage.
   **[affordance] cooperative large prey** (`capabilities.cooperative_large_prey`, on by default):
   a kill needs ≥ 2 distinct attackers within 6 ticks; a lone hunter only wounds. Carcass = 1.8
   energy (several meals → co-feeding is possible). Switch off for the ablation.
-- **Predators** hunt the nearest agent or prey within 6 cells (faster at night), attack adjacent
-  agents (p = 0.4, 0.08 health), flee for 25 ticks when hit, never enter caves/shelters.
-- Population floors (immigration) and caps keep species from going extinct or exploding.
+- **Predators** hunt the nearest agent or prey within 8 cells (faster at night), attack adjacent
+  agents (p = 0.4, 0.08 health), flee for 25 ticks when hit, never enter caves/shelters; low
+  metabolism lets them fast through prey troughs.
+- **Spin-up**: each run starts after one simulated year of ecology without agents
+  (`time.spinup_years`), so the lush initial state's first-spring boom-and-crash is not part of the run.
 
 ## Weather & disturbances (daily Markov chain from a seeded RNG; all logged as events)
 rain (season-dependent, persistent), fog (view radius 3), drought (summer; streams dry, growth ×0.4,
@@ -65,10 +74,11 @@ in `manual_log` and the event stream.
   g2 cold tolerance, g3–g7 neutral markers (used for appearance/kin recognition).
 - **Actions**: noop, move N/E/S/W, rest, eat, drink, hunt, pickup, drop; + build (niche
   construction), + strike (aggression), + `n_symbols` signals (communication).
-- **Perception**: 11×11 egocentric patch, 16 uint8 channels (visible, blocked, water, forest, rock,
+- **Perception**: 11×11 egocentric patch, channel-last `grid[y, x, c]`, 16 uint8 channels (visible, blocked, water, forest, rock,
   shelter, plant, fruit, food item, small prey, large prey, predator, agent [value encodes
-  **[affordance]** genetic similarity], fire, signal, snow); line of sight blocked by mountains and
-  by two forest cells; radius shrinks at night/fog. Self vector (13 interoceptive features), up to 4
+  **[affordance]** genetic similarity], fire, signal, snow); line of sight propagates outward along
+  each cell's Bresenham parent and is blocked by a mountain or a second forest cell (precomputed per
+  cell, terrain is static); radius shrinks at night/fog. Self vector (13 interoceptive features), up to 4
   nearest visible neighbours (position, health, carried food; last action only with
   `social_learning`/`reputation`; share/strike rates only with `reputation`), heard signals
   (communication only, radius 9, not occluded).

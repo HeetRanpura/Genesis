@@ -36,3 +36,15 @@ Deaths by cause (summed over seeds): **random** {'starvation': 3243, 'thirst': 3
   gain most on water-finding. Recorded here *before* training so it can be checked.
 - Heuristic agents die mostly from predators (48%) and thirst (36%); cold deaths cluster in cold snaps.
 - No social behaviour is expected or observed from baselines (none of them has any social rule).
+
+## 2026-10-26 19:15 — Stage 1 baseline survival
+
+Baselines, 5 seeds x 2.0 years, 256 agents, fixed population (respawn).
+
+| policy | deaths / agent-year (95% CI) | Kaplan-Meier survival at 1 yr (95% CI) |
+|---|---|---|
+| random | 2.55 [2.36, 2.79] | 0.134 [0.123, 0.143] |
+| greedy | 2.21 [1.95, 2.51] | 0.163 [0.135, 0.195] |
+| heuristic | 1.00 [0.70, 1.41] | 0.485 [0.329, 0.633] |
+
+Deaths by cause (summed over seeds): **random** {'starvation': 5128, 'thirst': 3359, 'cold': 910, 'fire': 271, 'predator': 142}; **greedy** {'starvation': 1699, 'thirst': 4685, 'cold': 1145, 'fire': 353, 'predator': 608}; **heuristic** {'starvation': 347, 'thirst': 2460, 'cold': 442, 'fire': 276, 'predator': 289, 'old_age': 17}
