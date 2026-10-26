@@ -49,7 +49,13 @@ STATIC = HERE / "static"
 THREE = HERE / "node_modules" / "three"
 
 BASE_TPS = 10.0                      # "1x" = 10 ticks/s (a sim day of 120 ticks takes 12 s)
-POLICIES = ("heuristic", "greedy", "random")
+POLICIES = ("heuristic", "greedy", "random")   # non-learning baselines
+
+
+def available_policies() -> list[str]:
+    """Baselines plus trained PPO checkpoints (runs/stage2/<run>/ckpt_latest.pt) as "ppo:<run>"."""
+    from agents.policy import trained_runs
+    return list(POLICIES) + [f"ppo:{r}" for r in trained_runs()]
 FRAME_HZ = 30.0
 SAMPLE_EVERY = 20                    # ticks between dashboard samples (6 per sim day)
 HISTORY = 720                        # dashboard samples kept server-side (~120 sim days)
@@ -212,8 +218,8 @@ class Sim:
 
     # ---------------------------------------------------------------- setup / teardown
     def _build(self, seed, policy, n_agents):
-        if policy not in POLICIES:
-            raise ValueError(f"policy must be one of {POLICIES}")
+        if policy not in available_policies():
+            raise ValueError(f"policy must be one of {available_policies()}")
         ov = json.loads(json.dumps(self.base_overrides))
         if n_agents:
             ov.setdefault("agents", {})["n_initial"] = int(n_agents)
@@ -223,7 +229,11 @@ class Sim:
         env = GenesisEnv(cfg, seed=seed)
         self.env = env
         self.policy_name = policy
-        self.policy = make_baseline(policy, env, seed=seed)
+        if policy.startswith("ppo:"):
+            from agents.policy import load_policy_agent
+            self.policy = load_policy_agent(policy[4:], env.N, seed=seed, device="mps")
+        else:
+            self.policy = make_baseline(policy, env, seed=seed)
         self.obs = env.observe()
         stamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
         self.logger = ViewerRunLogger(self.log_root / f"{stamp}_s{seed}_{policy}", env,
@@ -258,10 +268,11 @@ class Sim:
                                    deaths_per_agent_year=dpy, policy=self.policy_name))
         if self.agent_log and run_ticks >= env.tpd:   # only sessions of at least one sim day
             causes = {n: int(v) for n, v in zip(DEATH_NAMES, env.deaths_by_cause) if v}
+            kind = "learned PPO policy" if self.policy_name.startswith("ppo:") else "non-learning baseline"
             append_agent_log(
                 f"Live viewer session ({self.policy_name}, seed {env.seed})",
                 [f"Viewer run `{_rel(self.logger.dir)}`: {run_ticks} ticks ({years:.2f} sim years), "
-                 f"{env.cfg.agents.n_initial} agents, policy **{self.policy_name}** (non-learning baseline).",
+                 f"{env.cfg.agents.n_initial} agents, policy **{self.policy_name}** ({kind}).",
                  f"- deaths/agent-year {dpy:.2f}; deaths by cause {causes}; "
                  f"population at end {env.population()}.",
                  f"- manual interventions: {len(env.manual_log)} "
@@ -277,7 +288,7 @@ class Sim:
         h, wsurf, flood = scene_heights(env)
         cfg = env.cfg
         hdr = dict(
-            type="init", W=env.W, H=env.H, seed=env.seed, policy=self.policy_name, policies=list(POLICIES),
+            type="init", W=env.W, H=env.H, seed=env.seed, policy=self.policy_name, policies=available_policies(),
             action_names=env.action_names, tpd=env.tpd, season_len=env.season_len, year_len=env.year_len,
             n_initial=cfg.agents.n_initial, max_agents=env.N, base_tps=BASE_TPS,
             fauna_initial=[cfg.fauna.small_prey.initial, cfg.fauna.large_prey.initial, cfg.fauna.predators.initial],
@@ -652,7 +663,7 @@ def start_sim_thread(sim: Sim) -> threading.Thread:
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--policy", default="heuristic", choices=POLICIES)
+    ap.add_argument("--policy", default="heuristic", help="heuristic | greedy | random | ppo:<run>")
     ap.add_argument("--agents", type=int, default=None, help="initial agents (default: config agents.n_initial)")
     ap.add_argument("--config", default=None, help="experiment YAML deep-merged over configs/default.yaml")
     ap.add_argument("--speed", type=float, default=1.0, help=f"multiple of {BASE_TPS:g} ticks/s; 0 = max")

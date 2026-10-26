@@ -103,3 +103,23 @@ class PolicyAgent:
         if self.greedy:
             return logits.argmax(1).numpy()
         return torch.multinomial(torch.softmax(logits, 1), 1, generator=self.gen).squeeze(1).numpy()
+
+
+def load_policy_agent(run: str, n_slots: int, seed: int = 0, device: str = "cpu",
+                      root: "Path | None" = None) -> PolicyAgent:
+    """PolicyAgent from runs/stage2/<run>/ckpt_latest.pt (written by experiments/train_ppo.py)."""
+    from pathlib import Path
+    root = root or Path(__file__).resolve().parent.parent
+    ck = torch.load(root / "runs" / "stage2" / run / "ckpt_latest.pt", weights_only=False, map_location="cpu")
+    model = ActorCritic(ck["obs_shapes"], ck["n_actions"], ck["hidden"], ck["core"])
+    model.load_state_dict(ck["trainer"]["model"])
+    agent = PolicyAgent(model, n_slots, seed=seed, device=device)
+    agent.description = f"PPO {ck['core'].upper()} ({ck['trainer']['agent_steps'] / 1e6:.1f}M agent-steps)"
+    return agent
+
+
+def trained_runs(root: "Path | None" = None) -> list[str]:
+    """Names of runs under runs/stage2 that have a checkpoint."""
+    from pathlib import Path
+    root = root or Path(__file__).resolve().parent.parent
+    return sorted(p.parent.name for p in (root / "runs" / "stage2").glob("*/ckpt_latest.pt"))

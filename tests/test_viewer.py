@@ -74,3 +74,10 @@ def test_viewer_server_streams_and_logs(tmp_path):
     assert idx["ticks"] == summary["ticks"] and idx["agent_rows"] > 0
     assert [m["kind"] for m in load(run_dir, "manual")] == ["fire"]
     assert sum(1 for _ in replay(run_dir)) == idx["ticks"]
+
+
+def test_available_policies_include_baselines():
+    from viewer.server import POLICIES, available_policies
+    pols = available_policies()
+    assert list(POLICIES) == pols[:3]
+    assert all(p.startswith("ppo:") for p in pols[3:])

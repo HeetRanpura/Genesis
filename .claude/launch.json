@@ -2,9 +2,33 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "genesis-viewer",
+      "runtimeExecutable": ".venv/bin/python",
+      "runtimeArgs": [
+        "-m",
+        "viewer.server",
+        "--policy",
+        "ppo:gru",
+        "--seed",
+        "0",
+        "--port",
+        "8787",
+        "--no-agent-log"
+      ],
+      "port": 8787
+    },
+    {
       "name": "genesis-preview",
       "runtimeExecutable": ".venv/bin/python",
-      "runtimeArgs": ["viewer/preview_server.py", "--policy", "ppo:gru", "--seed", "0", "--port", "8765"],
+      "runtimeArgs": [
+        "viewer/preview_server.py",
+        "--policy",
+        "ppo:gru",
+        "--seed",
+        "0",
+        "--port",
+        "8765"
+      ],
       "port": 8765
     }
   ]

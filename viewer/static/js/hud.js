@@ -83,7 +83,11 @@ export class HUD {
     this.history = (init.history || []).slice();
     this.spd = init.tpd / init.sample_every;   // samples per sim day
     $('seed-label').textContent = `seed ${init.seed} · ${init.n_initial} agents`;
-    $('policy-pill').textContent = `${init.policy} baseline · non-learning`;
+    const learned = init.policy.startsWith('ppo:');
+    $('policy-pill').textContent = learned ? `${init.policy.slice(4).toUpperCase()} agents · learned (PPO)`
+                                           : `${init.policy} baseline · non-learning`;
+    $('policy-pill').title = learned ? 'Agents act from a policy trained with PPO on survival reward only'
+                                     : 'Agents are driven by a hand-written, non-learning baseline';
     $('rs-seed').value = init.seed; $('rs-agents').value = init.n_initial;
     $('rs-policy').innerHTML = init.policies.map((p) => `<option ${p === init.policy ? 'selected' : ''}>${p}</option>`).join('');
     const ECO = ['cooperative_large_prey', 'huddle_warmth'];
