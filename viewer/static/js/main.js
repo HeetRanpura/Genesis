@@ -1,6 +1,7 @@
 // GENESIS live viewer: renders the state streamed by viewer/server.py.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Net } from './net.js';
 import { World, makeUniforms } from './world.js';
 import { Sky } from './sky.js';
@@ -19,6 +20,9 @@ renderer.toneMappingExposure = 1.0;
 renderer.setClearColor(0x000000);
 
 const scene = new THREE.Scene();
+// soft image-based lighting for physically based materials (scaled by daylight each frame)
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.25;
 const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.3, 4500);
 camera.position.set(0, 80, 90);
 const controls = new OrbitControls(camera, canvas);
@@ -40,7 +44,7 @@ let quality = devicePixelRatio > 1.6 ? 1 : 0;
 
 const app = {
   world: null, creatures: null, effects: null, init: null, frame: null,
-  followUid: null, selectedUid: null, tool: null, director: false, overlay: 0,
+  followUid: null, selectedUid: null, tool: null, director: false, overlay: 0, chase: false,
 };
 const clockState = { tick: 0, recv: 0, tps: 0, lastChange: 0, interval: 0.1 };
 let lastFrameTick = -1;
@@ -87,7 +91,7 @@ function onFrame(fr) {
     const dur = clamp(clockState.interval * 1.08, 1 / 45, 0.8);
     app.creatures.onFrame(fr, now, dur);
     lastFrameTick = fr.tick;
-    if (app.overlay === 2 && fr.tick % 2 === 0) app.world.updateDensity(fr.data.agents, fr.data.agents.length / 8);
+    app.world.updateDensity(fr.data.agents, fr.data.agents.length / 8);   // overlay + worn footpaths
   }
   clockState.tick = fr.tick; clockState.recv = now; clockState.tps = fr.paused ? 0 : fr.tps;
   hud.onFrame(fr);
@@ -131,13 +135,23 @@ app.select = (uid) => {
   app.selectedUid = uid;
   app.creatures?.select(uid);
   net.send({ cmd: 'select', uids: uid != null ? [uid] : [] });
-  if (uid == null) { hud.closeInspector(); app.followUid = null; }
+  if (uid == null) { hud.closeInspector(); app.followUid = null; if (app.chase) app.toggleChase(); }
 };
 app.toggleFollow = () => {
   app.followUid = app.followUid === app.selectedUid ? null : app.selectedUid;
   if (app.followUid != null) { const s = app.creatures.get(app.followUid); if (s) app.flyTo(s.x, s.y, 28); }
   document.getElementById('insp-follow').classList.toggle('on', app.followUid != null);
 };
+app.toggleChase = () => {
+  if (app.selectedUid == null) { toast('Select an agent first, then press V for the chase camera'); return; }
+  app.chase = !app.chase;
+  app.followUid = app.chase ? app.selectedUid : app.followUid;
+  controls.enabled = !app.chase;
+  document.getElementById('insp-chase')?.classList.toggle('on', app.chase);
+  toast(app.chase ? 'Chase camera: V to leave, mouse wheel to change distance' : 'Chase camera off');
+};
+let chaseDist = 7.5;
+addEventListener('wheel', (e) => { if (app.chase) chaseDist = clamp(chaseDist * (1 + e.deltaY * 0.001), 3, 30); }, { passive: true });
 app.setTool = (tool) => { app.tool = tool; hud.setToolButtons(tool); canvas.style.cursor = tool ? 'crosshair' : ''; };
 app.setOverlay = (v) => {
   app.overlay = v; U.uOverlay.value = v;
@@ -222,6 +236,7 @@ addEventListener('keydown', (e) => {
   else if (e.key >= '1' && e.key <= '6') net.send({ cmd: 'speed', value: [0.25, 1, 4, 16, 100, 0][Number(e.key) - 1] });
   else if (e.key === 'Escape') { if (app.tool) app.setTool(null); else app.select(null); }
   else if (e.key === 'f' && app.selectedUid != null) app.toggleFollow();
+  else if (e.key === 'v') app.toggleChase();
   else if (e.key === 'c') app.toggleDirector();
   else if (e.key === 'o') app.setOverlay((app.overlay + 1) % 4);
   else if (e.key === 'h') document.getElementById('ui').classList.toggle('hide-ui');
@@ -274,10 +289,12 @@ function download(blob, name) { const a = document.createElement('a'); a.href = 
 app.cycleQuality = () => {
   quality = (quality + 1) % QUALITY.length;
   document.getElementById('btn-quality').textContent = QUALITY[quality][1];
+  post.setAO(quality === 0);
   resize();
   toast(`Render quality ${QUALITY[quality][1]} (pixel ratio ${QUALITY[quality][0].toFixed(2)})`);
 };
 document.getElementById('btn-quality').textContent = QUALITY[quality][1];
+post.setAO(quality === 0);   // ambient occlusion only in HQ (costly)
 
 function resize() {
   const pr = QUALITY[quality][0];
@@ -322,7 +339,23 @@ function animate() {
     const lights = sky.update(tod, fr.weather, controls.target, dist, dt);
     keyboardPan(dt);
     // follow
-    if (app.followUid != null) {
+    if (app.chase) {
+      const s = app.creatures.get(app.followUid);
+      if (s && s.wpos) {
+        // third-person chase camera: behind the agent's heading, slightly above, smoothly damped
+        const back = new THREE.Vector3(-Math.sin(s.heading), 0, -Math.cos(s.heading));
+        const want = tmpV.copy(s.wpos).addScaledVector(back, chaseDist).add(new THREE.Vector3(0, 0.55 * chaseDist + 1.6, 0));
+        const [gx, gy] = app.world.cellOf(want.x, want.z);       // stay above canopy and terrain behind the agent
+        if (gx >= 0 && gy >= 0 && gx < init.W && gy < init.H) {
+          const t0 = app.world.terrain[gy * init.W + gx];
+          want.y = Math.max(want.y, app.world.heightAt(gx, gy) + (t0 === 5 ? 3.4 : 1.4));
+        }
+        const k = 1 - Math.exp(-dt * 2.6);
+        camera.position.lerp(want, k);
+        controls.target.lerp(new THREE.Vector3(s.wpos.x, s.wpos.y + 1.0, s.wpos.z).addScaledVector(back, -2.0), 1 - Math.exp(-dt * 6));
+        camera.lookAt(controls.target);
+      } else if (!s) app.toggleChase();
+    } else if (app.followUid != null) {
       const s = app.creatures.get(app.followUid);
       if (s && s.wpos) {
         const d = tmpV.copy(s.wpos).sub(controls.target).multiplyScalar(1 - Math.exp(-dt * 5));
@@ -338,7 +371,7 @@ function animate() {
       const dy = (gy - controls.target.y) * (1 - Math.exp(-dt * 4));
       controls.target.y += dy; camera.position.y += dy;
     }
-    controls.update();
+    if (!app.chase) controls.update();
     // don't let the camera dip under the terrain
     const [kx, ky] = app.world.cellOf(camera.position.x, camera.position.z);
     if (kx >= 0 && ky >= 0 && kx < init.W && ky < init.H) {
@@ -353,7 +386,8 @@ function animate() {
       else if (s.action === 6 && Math.random() < dt * 2) app.effects.burst('eat', s.x, s.y);
     }
     app.effects.update(dt, now, controls.target, env);
-    const tilt = clamp(1.25 - dist / 140, 0.15, 1.0);
+    const tilt = app.chase ? 0.12 : clamp(1.25 - dist / 140, 0.15, 1.0);
+    scene.environmentIntensity = 0.06 + 0.3 * (1 - lights.night);
     post.render(now, lights.night, tilt);
     if (app.shot) {
       app.shot = false;

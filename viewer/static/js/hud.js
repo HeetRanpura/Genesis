@@ -357,6 +357,7 @@ export class HUD {
     $('help-close').onclick = () => $('help').classList.add('hidden');
     $('insp-close').onclick = () => app.select(null);
     $('insp-follow').onclick = () => app.toggleFollow();
+    $('insp-chase').onclick = () => app.toggleChase();
     $('overlay').onchange = (e) => app.setOverlay(Number(e.target.value));
     $('btn-director').onclick = () => app.toggleDirector();
     $('btn-shot').onclick = () => app.screenshot();

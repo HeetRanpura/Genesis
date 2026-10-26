@@ -30,6 +30,7 @@ function inject(mat, U, vertDecl, vertBody, fragDecl, fragColor, extra = {}) {
       .replace('#include <common>', `#include <common>\n${COMMON_DECL}\n${fragDecl}`)
       .replace('#include <color_fragment>', `#include <color_fragment>\n${fragColor}`);
     if (extra.rough) sh.fragmentShader = sh.fragmentShader.replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>\n${extra.rough}`);
+    if (extra.normal) sh.fragmentShader = sh.fragmentShader.replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>\n${extra.normal}`);
     if (extra.emissive) sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>\n${extra.emissive}`);
   };
   return mat;
@@ -49,9 +50,10 @@ export class World {
     this.fieldData = new Uint8Array(this.W * this.H * 4);
     this.texLin = this._dataTex(this.fieldData, THREE.LinearFilter);
     this.texNear = this._dataTex(this.fieldData, THREE.NearestFilter);
-    this.densData = new Uint8Array(this.W * this.H);
+    this.densData = new Uint8Array(this.W * this.H * 2);      // R recent visits (overlay), G long-term trails
     this.densF = new Float32Array(this.W * this.H);
-    this.densTex = new THREE.DataTexture(this.densData, this.W, this.H, THREE.RedFormat, THREE.UnsignedByteType);
+    this.trailF = new Float32Array(this.W * this.H);
+    this.densTex = new THREE.DataTexture(this.densData, this.W, this.H, THREE.RGFormat, THREE.UnsignedByteType);
     this.densTex.magFilter = this.densTex.minFilter = THREE.LinearFilter;
     this.densTex.needsUpdate = true;
     U.uField.value = this.texLin; U.uFlags.value = this.texNear; U.uOverlayTex.value = this.densTex;
@@ -136,13 +138,13 @@ export class World {
       float gFert = vInfo.x, gVeg = vInfo.y, gCrack = vInfo.z, gMtn = vInfo.w;
       vec3 gc = diffuseColor.rgb;
       float gPlantN = clamp(gFld.r / max(gFert, 0.04), 0., 1.);
-      vec3 gStraw = vec3(0.40, 0.30, 0.11);
+      vec3 gStraw = vec3(0.30, 0.25, 0.12);
       gc = mix(gc, mix(gStraw, gc * 0.8, 0.3), gVeg * (1. - smoothstep(0.08, 0.75, gPlantN)) * 0.85);
       float gLum = dot(gc, vec3(0.3, 0.59, 0.11));
       gc = mix(gc, gc * vec3(0.96, 1.08, 0.88), uSeason.x * gVeg * 0.5);
-      gc = mix(gc, gc * vec3(1.28, 0.9, 0.5), uSeason.z * gVeg * 0.55);
+      gc = mix(gc, gc * vec3(1.15, 0.95, 0.68), uSeason.z * gVeg * 0.45);
       gc = mix(gc, vec3(gLum) * vec3(0.98, 0.9, 0.82), uSeason.w * gVeg * 0.55);
-      gc = mix(gc, gc * vec3(1.2, 0.97, 0.66), uDrought * gVeg * 0.65);
+      gc = mix(gc, gc * vec3(1.1, 0.98, 0.78), uDrought * gVeg * 0.5);
       float gCr = max(1. - smoothstep(0.0, 0.045, abs(gNoise(vWPos.xz * 0.85) - 0.5)),
                       1. - smoothstep(0.0, 0.045, abs(gNoise(vWPos.zx * 1.3 + 9.) - 0.5)));
       gc *= 1. - 0.55 * gCr * uDrought * gCrack;
@@ -153,6 +155,9 @@ export class World {
       gc = mix(gc, vec3(0.86, 0.9, 0.97), gSnow);
       gc = mix(gc, vec3(0.03, 0.026, 0.024), gBurnt * 0.85);
       gc = mix(gc, gc * vec3(0.5, 0.45, 0.36), gFlood * 0.7);
+      // footpaths: ground worn where agents have walked often (long-term visit counts; visual only)
+      float gTrail = smoothstep(0.08, 0.7, texture2D(uOverlayTex, vCell).g) * gVeg * (1. - gSnow);
+      gc = mix(gc, vec3(0.2, 0.15, 0.09) * (0.8 + 0.4 * gNoise(vWPos.xz * 3.1)), gTrail * 0.55);
       gc *= 1. - 0.16 * uWet * (1. - gSnow);
       float gCs = smoothstep(0.5, 0.78, gFbm(vWPos.xz * 0.011 + uTime * vec2(0.012, 0.005))) * uCloud;
       gc *= 1. - 0.28 * gCs;
@@ -167,6 +172,10 @@ export class World {
       `,
       {
         rough: `roughnessFactor = mix(roughnessFactor, 0.32, clamp(uWet * 0.85 + gFlood, 0., 1.) * (1. - gSnow));`,
+        normal: `{ vec2 nq = vWPos.xz * 2.3; float b0 = gFbm(nq), bx = gFbm(nq + vec2(0.07, 0.)), bz = gFbm(nq + vec2(0., 0.07));
+                   float nb = gNoise(vWPos.xz * 9.0) - gNoise(vWPos.xz * 9.0 + vec2(0.05, 0.0));
+                   vec3 bw = vec3((b0 - bx) * 0.9 + nb * 0.25, 0.0, (b0 - bz) * 0.9) * (1.0 - gSnow * 0.7);
+                   normal = normalize(normal + (viewMatrix * vec4(bw, 0.0)).xyz); }`,
         emissive: `totalEmissiveRadiance += gOv * gOvA * 0.35;
           totalEmissiveRadiance += vec3(1.0, 0.22, 0.02) * gFireAmt * (0.9 + 0.5 * sin(uTime * 13. + vWPos.x * 2.1 + vWPos.z * 1.3));`,
       });
@@ -292,16 +301,25 @@ export class World {
     const { W, H, terrain, height } = this;
     const R = this.rand;
     const conifer = mergeGeometries([
-      this._part(new THREE.CylinderGeometry(0.06, 0.09, 0.6, 5).translate(0, 0.3, 0), 0),
-      this._part(new THREE.ConeGeometry(0.55, 0.9, 7).translate(0, 0.85, 0), 1),
-      this._part(new THREE.ConeGeometry(0.44, 0.8, 7).translate(0, 1.3, 0), 1),
-      this._part(new THREE.ConeGeometry(0.3, 0.7, 7).translate(0, 1.72, 0), 1),
+      this._part(new THREE.CylinderGeometry(0.05, 0.09, 0.7, 6).translate(0, 0.35, 0), 0),
+      ...[[0.6, 0.62, 0.7], [0.52, 0.58, 1.0], [0.43, 0.54, 1.3], [0.33, 0.5, 1.6], [0.22, 0.46, 1.88]].map(([r, h, y]) =>
+        this._part(new THREE.ConeGeometry(r, h, 10, 1, true).translate(0, y, 0), 1)),
     ]);
+    const blob = (r, x, y, z, seed) => {   // lumpy, smooth-shaded canopy cluster
+      const g = new THREE.IcosahedronGeometry(r, 2);
+      const pos = g.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const vx = pos.getX(i), vy = pos.getY(i), vz = pos.getZ(i);
+        const n = 1 + 0.16 * Math.sin(vx * 9 + seed) * Math.sin(vy * 7 + seed * 2) * Math.sin(vz * 8 + seed * 3);
+        pos.setXYZ(i, vx * n, vy * n * 0.88, vz * n);
+      }
+      g.computeVertexNormals();
+      return this._part(g.translate(x, y, z), 1);
+    };
     const broad = mergeGeometries([
-      this._part(new THREE.CylinderGeometry(0.07, 0.11, 0.8, 5).translate(0, 0.4, 0), 0),
-      this._part(new THREE.IcosahedronGeometry(0.62, 0).scale(1, 0.85, 1).translate(0, 1.15, 0), 1),
-      this._part(new THREE.IcosahedronGeometry(0.42, 0).translate(0.32, 0.95, 0.12), 1),
-      this._part(new THREE.IcosahedronGeometry(0.38, 0).translate(-0.28, 1.0, -0.2), 1),
+      this._part(new THREE.CylinderGeometry(0.06, 0.12, 0.95, 7).translate(0, 0.47, 0), 0),
+      this._part(new THREE.CylinderGeometry(0.03, 0.05, 0.5, 5).rotateZ(0.7).translate(0.2, 0.95, 0), 0),
+      blob(0.58, 0, 1.2, 0, 1), blob(0.42, 0.36, 1.0, 0.14, 2), blob(0.4, -0.32, 1.05, -0.18, 3), blob(0.34, 0.05, 1.55, -0.1, 4),
     ]);
     const fruitTrees = new Map();
     for (let k = 0; k < this.treeX.length; k++) fruitTrees.set(this.treeY[k] * W + this.treeX[k], k);
@@ -369,7 +387,7 @@ export class World {
   }
 
   _treeMaterial() {
-    return inject(new THREE.MeshStandardMaterial({ flatShading: true, roughness: 0.82 }), this.U,
+    return inject(new THREE.MeshStandardMaterial({ roughness: 0.85, side: THREE.DoubleSide }), this.U,
       `attribute float aFoliage; attribute vec2 aCell; attribute float aSeed; attribute float aKind; attribute float aDead;
        varying float vFol; varying float vSnow; varying float vBurnt; varying float vSeed; varying float vKind;`,
       /* glsl */`
@@ -409,13 +427,18 @@ export class World {
     const R = this.rand;
     const blades = [];
     for (let b = 0; b < 5; b++) {
-      const a = b / 5 * Math.PI * 2 + 0.4, r = 0.09;
+      const a = b / 5 * Math.PI * 2 + 0.4 + (b % 2) * 0.3, r = 0.05 + 0.04 * (b % 3);
+      const h = 0.34 + 0.06 * ((b * 5) % 4), lean = 0.12 + 0.05 * (b % 3);
+      const cx = Math.cos(a) * r, cz = Math.sin(a) * r, dx = Math.cos(a), dz = Math.sin(a);
+      const px = -Math.sin(a) * 0.016, pz = Math.cos(a) * 0.016;
+      const mx = cx + dx * lean * 0.35, mz = cz + dz * lean * 0.35, my = h * 0.55;
+      const tx = cx + dx * lean, tz = cz + dz * lean;
       const g = new THREE.BufferGeometry();
-      const cx = Math.cos(a) * r, cz = Math.sin(a) * r, tx = Math.cos(a) * 0.22, tz = Math.sin(a) * 0.22;
-      const px = -Math.sin(a) * 0.045, pz = Math.cos(a) * 0.045;
       g.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
-        cx - px, 0, cz - pz, cx + px, 0, cz + pz, cx + tx, 0.42 + b * 0.04, cz + tz]), 3));
-      g.setAttribute('normal', new THREE.BufferAttribute(new Float32Array([0, 1, 0, 0, 1, 0, 0, 1, 0]), 3));
+        cx - px, 0, cz - pz, cx + px, 0, cz + pz, mx + px * 0.7, my, mz + pz * 0.7,
+        cx - px, 0, cz - pz, mx + px * 0.7, my, mz + pz * 0.7, mx - px * 0.7, my, mz - pz * 0.7,
+        mx - px * 0.7, my, mz - pz * 0.7, mx + px * 0.7, my, mz + pz * 0.7, tx, h, tz]), 3));
+      g.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(27).fill(0).map((_, i) => (i % 3 === 1 ? 1 : 0)), 3));
       blades.push(g);
     }
     const geo = mergeGeometries(blades);
@@ -423,7 +446,7 @@ export class World {
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const t = terrain[y * W + x];
       const p = t === T.MEADOW ? 0.95 : t === T.GRASS ? 0.6 : t === T.FOREST ? 0.12 : t === T.BARREN ? 0.08 : 0;
-      for (let k = 0; k < 2; k++) if (R() < p) list.push([x + (R() - 0.5) * 0.9, y + (R() - 0.5) * 0.9, t]);
+      for (let k = 0; k < 2; k++) if (R() < p) list.push([x + (R() - 0.5) * 0.95, y + (R() - 0.5) * 0.95, t]);
     }
     const n = list.length;
     const cellA = new Float32Array(n * 2), fertA = new Float32Array(n), seedA = new Float32Array(n);
@@ -445,12 +468,13 @@ export class World {
        transformed.z += gSw * 0.05 * transformed.y * 2.0;`,
       `varying float vPl; varying float vSeed; varying float vY; uniform float uDrought;`,
       /* glsl */`
-       vec3 gLush = mix(vec3(0.07, 0.24, 0.035), vec3(0.16, 0.34, 0.05), vSeed);
+       vec3 gLush = mix(vec3(0.09, 0.27, 0.04), vec3(0.2, 0.38, 0.07), vSeed);
        vec3 gDry = vec3(0.42, 0.32, 0.12);
        vec3 gcol = mix(gDry, gLush, smoothstep(0.1, 0.7, vPl) * (1. - uDrought * 0.6));
        gcol = mix(gcol, gcol * vec3(1.3, 0.85, 0.45), uSeason.z * 0.6);
        gcol = mix(gcol, vec3(0.32, 0.27, 0.2), uSeason.w * 0.6);
-       gcol *= 0.55 + 0.9 * clamp(vY * 2.2, 0., 1.);
+       gcol *= 0.45 + 1.0 * clamp(vY * 2.6, 0., 1.);
+       gcol = mix(gcol, gcol * vec3(1.25, 1.2, 0.8), smoothstep(0.25, 0.45, vY) * 0.5);   // sunlit, drier tips
        diffuseColor.rgb = gcol;`);
     this.grass = new THREE.InstancedMesh(geo, mat, n);
     const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
@@ -605,14 +629,14 @@ export class World {
 
   // agent-density overlay: exponentially decaying visit counts
   updateDensity(agents, n) {
-    const d = this.densF, W = this.W;
-    for (let i = 0; i < d.length; i++) d[i] *= 0.985;
+    const d = this.densF, tr = this.trailF, W = this.W;
+    for (let i = 0; i < d.length; i++) { d[i] *= 0.985; tr[i] *= 0.9995; }
     for (let k = 0; k < n; k++) {
-      const x = agents[k * 8], y = agents[k * 8 + 1];
-      d[y * W + x] += 1;
+      const i = agents[k * 8 + 1] * W + agents[k * 8];
+      d[i] += 1; tr[i] += 1;
     }
     const out = this.densData;
-    for (let i = 0; i < d.length; i++) out[i] = Math.min(255, d[i] * 6);
+    for (let i = 0; i < d.length; i++) { out[i * 2] = Math.min(255, d[i] * 6); out[i * 2 + 1] = Math.min(255, tr[i] * 3); }
     this.densTex.needsUpdate = true;
   }
 
