@@ -272,7 +272,7 @@ def plot_observation(cfg):
         obs, *_ = env.step(pol.act(obs, env.alive))
     alive = np.flatnonzero(env.alive)
     # pick the agent that sees the most distinct channels
-    best = max(alive, key=lambda i: int((obs["grid"][i].reshape(16, -1).max(1) > 0).sum()))
+    best = max(alive, key=lambda i: int((obs["grid"][i].reshape(-1, 16).max(0) > 0).sum()))
     g = obs["grid"][best]
     fig, axs = plt.subplots(2, 9, figsize=(18, 4.6))
     x, y = env.I[best, I_X], env.I[best, I_Y]
@@ -282,7 +282,7 @@ def plot_observation(cfg):
     axs[0, 0].set_title("true terrain")
     for k in range(16):
         ax = axs[(k + 1) // 9, (k + 1) % 9]
-        ax.imshow(g[k], cmap="magma", vmin=0, vmax=255)
+        ax.imshow(g[:, :, k], cmap="magma", vmin=0, vmax=255)   # grid is channel-last
         ax.set_title(OBS_CHANNELS[k], fontsize=8)
     axs[1, 8].axis("off")
     for ax in axs.ravel():

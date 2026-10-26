@@ -37,5 +37,15 @@ EV_COLS = 7
  P_COMMS, P_HUDDLE, P_COOP_LARGE, P_MIN_ATTACKERS, P_ATT_WINDOW, P_FRUIT_MAX, P_HIST_LEN,
  P_DROUGHT, P_SMALL_E, P_LARGE_E, P_PRED_DMG, P_FLEE_R, P_PRED_SENSE, P_FAUNA_MAX0, P_FAUNA_MAX1,
  P_FAUNA_MAX2, P_FAUNA_MIN0, P_FAUNA_MIN1, P_FAUNA_MIN2, P_BUILD_IDX, P_STRIKE_IDX, P_SIGNAL_IDX,
- P_SNOWING, P_PRED_ATTACK) = range(58)
-NP = 58
+ P_SNOWING, P_PRED_ATTACK, P_FAUNA_COLD, P_FAUNA_BREED) = range(60)
+NP = 60
+
+# fauna species parameters  FP[species, NFP] (float64, from config fauna.<species>.*)
+(FP_METAB, FP_BITE, FP_CONV, FP_SAT, FP_REPRO_THR, FP_REPRO_RATE, FP_MAX_AGE, FP_GAIN_SMALL,
+ FP_GAIN_LARGE, FP_GAIN_AGENT, FP_BREED_FORAGE, FP_BROWSE) = range(12)
+NFP = 12
+
+# fauna demographic counters  FSTAT[species, NFS] (cumulative int64)
+FS_BIRTH, FS_IMMIGRANT, FS_STARVED, FS_OLD, FS_FIRE, FS_EATEN, FS_HUNTED = range(7)
+NFS = 7
+FSTAT_NAMES = ["births", "immigrants", "starved", "old_age", "fire", "eaten", "hunted"]

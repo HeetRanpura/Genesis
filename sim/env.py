@@ -21,15 +21,15 @@ from .constants import (BASE_ACTION_NAMES, BARREN, CLEAR, DEATH_NAMES, EV_COLD_S
                         N_OBS_CHANNELS, NEIGHBOR_FEATURES, PREDATOR, RAIN, ROCK, SAND,
                         SELF_FEATURES, SMALL_PREY)
 from .layout import *  # noqa: F401,F403
-from .rng import permutation
 from .worldgen import generate_world
 
 SEASON_NAMES = ["spring", "summer", "autumn", "winter"]
 
 
 def make_rays(R: int):
-    """Offsets of a (2R+1)^2 patch sorted by distance, with the Bresenham cells strictly between
-    the centre and each offset (used for line-of-sight occlusion)."""
+    """Offsets of a (2R+1)^2 patch sorted by distance, the Bresenham cells strictly between the
+    centre and each offset, and each offset's parent (index of the last such cell, -1 if none),
+    used for line-of-sight propagation."""
     offs = [(dy, dx) for dy in range(-R, R + 1) for dx in range(-R, R + 1)]
     offs.sort(key=lambda o: (o[0] ** 2 + o[1] ** 2, o))
     n = len(offs)
@@ -58,7 +58,10 @@ def make_rays(R: int):
             ray[k, s] = c
     off = np.array(offs, dtype=np.int64)
     dist = np.sqrt((off ** 2).sum(1)).astype(np.float64)
-    return off, dist, ray, raylen
+    index = {o: k for k, o in enumerate(offs)}
+    parent = np.array([index[tuple(ray[k, raylen[k] - 1])] if raylen[k] else -1 for k in range(n)], np.int64)
+    assert np.all(dist[parent[parent >= 0]] < dist[parent >= 0])   # parents come first
+    return off, dist, parent
 
 
 class GenesisEnv:
@@ -85,13 +88,13 @@ class GenesisEnv:
         self.N = ac.max_agents
         self.R = ac.view_radius
         self.n_symbols = cap.n_symbols
-        self.obs_shapes = {
-            "grid": (N_OBS_CHANNELS, 2 * self.R + 1, 2 * self.R + 1),
+        self.obs_shapes = {   # grid is channel-last: (y, x, channel)
+            "grid": (2 * self.R + 1, 2 * self.R + 1, N_OBS_CHANNELS),
             "self": (len(SELF_FEATURES),),
             "neighbors": (ac.n_neighbors_obs, len(NEIGHBOR_FEATURES)),
             "heard": (self.n_symbols,),
         }
-        self.OFF, self.ODIST, self.RAY, self.RAYLEN = make_rays(self.R)
+        self.OFF, self.ODIST, self.PARENT = make_rays(self.R)
         tc = c.time
         self.tpd = tc.ticks_per_day
         self.season_len = tc.ticks_per_day * tc.days_per_season
@@ -151,11 +154,24 @@ class GenesisEnv:
         fc = c.fauna
         self.fauna_max = np.array([fc.small_prey.max, fc.large_prey.max, fc.predators.max])
         self.fauna_min = np.array([fc.small_prey.min, fc.large_prey.min, fc.predators.min])
+        self.FP = np.zeros((3, NFP), np.float64)
+        for sp, spc in enumerate([fc.small_prey, fc.large_prey, fc.predators]):
+            row = self.FP[sp]
+            row[FP_METAB], row[FP_BITE], row[FP_CONV] = spc.metabolism, spc.get("bite", 0.0), spc.get("conversion", 0.0)
+            row[FP_SAT], row[FP_REPRO_THR], row[FP_REPRO_RATE] = spc.satiation, spc.repro_threshold, spc.repro_rate
+            row[FP_MAX_AGE] = spc.max_age_years * self.year_len
+            row[FP_GAIN_SMALL], row[FP_GAIN_LARGE] = spc.get("gain_small", 0.0), spc.get("gain_large", 0.0)
+            row[FP_GAIN_AGENT] = spc.get("gain_agent", 0.0)
+            row[FP_BREED_FORAGE] = spc.get("breed_forage", 0.0)
+            row[FP_BROWSE] = spc.get("browse_conversion", 0.0)
         M = int(self.fauna_max.sum()) + 64
         self.FF = np.zeros((M, NFF), np.float32)
         self.FI = np.zeros((M, NFI), np.int64)
         self.fcount = np.zeros(4, np.int64)          # 3 species counts + free-slot hint
+        self.fstat = np.zeros((3, NFS), np.int64)
         self.tgrid = np.zeros(((h + 3) // 4, (w + 3) // 4), np.int64)
+        self.img = np.zeros((h, w, N_OBS_CHANNELS), np.uint8)
+        self.vismask = np.zeros((h, w, 2), np.uint64)
         self.fprop = np.zeros((M, 2), np.int64)
         # events
         self.EV = np.zeros((200_000, EV_COLS), np.float64)
@@ -173,11 +189,35 @@ class GenesisEnv:
         self.cold_snap_left = 0
         self.famine_left = 0
         self.n_fire = 0
+        self.fire_box = np.array([0, -1, 0, -1], np.int64)
+        self._row_min = np.zeros(h, np.int64)
+        self._row_max = np.zeros(h, np.int64)
         self.manual_log: list[dict] = []
         self.P = np.zeros(NP, np.float64)
         self._fill_static_params()
         self._climate_tick(new_day=True)
 
+        self._spawn_initial_fauna()
+        self.refresh_img()
+        # ecological spin-up: plants and fauna run without agents so runs start from a settled
+        # ecosystem instead of the lush initial state (whose first-spring boom-and-crash is an artefact)
+        spin = int(c.time.spinup_years * self.year_len)
+        self._prev_drive = self._drive()
+        if spin > 0:
+            idle = np.zeros(self.N, np.int64)
+            keep = self.keep_events
+            self.keep_events = False
+            for _ in range(spin):
+                self.step(idle, compute_obs=False)
+            self.keep_events = keep
+            self.spinup_ticks = spin
+        else:
+            self.spinup_ticks = 0
+        self.event_log.clear()
+        self.ev_counts[:] = 0
+        self.deaths_by_cause[:] = 0
+        self.fstat[:] = 0
+        self.manual_log.clear()
         # initial population (deterministic, uses the respawn kernel)
         slots = np.arange(ac.n_initial, dtype=np.int64)
         self.next_uid = K.respawn_step(self.P, self.next_uid, ac.n_genes, self.lifespan_lo, self.lifespan_hi,
@@ -186,7 +226,6 @@ class GenesisEnv:
         # random initial ages so the population is not synchronised
         alive = self.I[:, I_ALIVE] == 1
         self.I[alive, I_AGE] = (self.rng.random(alive.sum()) * 0.5 * self.I[alive, I_LIFESPAN]).astype(np.int64)
-        self._spawn_initial_fauna()
         self.n_ev[0] = 0
         self.I[:, I_BORN_NOW] = 0
         self._prev_drive = self._drive()
@@ -219,7 +258,7 @@ class GenesisEnv:
             for p in picks:
                 y, x = divmod(int(p), self.W)
                 if self.fidx[y, x] < 0 and self.occ[y, x] < 0:
-                    K._spawn_fauna(sp, x, y, 0.8, self.FF, self.FI, self.fidx, self.fcount)
+                    K._spawn_fauna(sp, x, y, 0.8, self.FF, self.FI, self.fidx, self.fcount, self.img)
 
     # ------------------------------------------------------------------------------------
     def _fill_static_params(self):
@@ -266,6 +305,7 @@ class GenesisEnv:
         P[P_LARGE_E] = fc.large_prey.energy
         P[P_PRED_DMG] = fc.predators.damage
         P[P_PRED_ATTACK] = fc.predators.attack_prob
+        P[P_FAUNA_COLD] = fc.cold_metabolism
         P[P_FLEE_R] = fc.flee_radius
         P[P_PRED_SENSE] = fc.predator_sense
         for s in range(3):
@@ -297,7 +337,7 @@ class GenesisEnv:
         return math.sin(2 * math.pi * (self.time_of_day - 0.25))
 
     def night_level(self) -> float:
-        return float(1.0 - np.clip((self.sun() + 0.2) / 0.4, 0.0, 1.0))
+        return 1.0 - min(1.0, max(0.0, (self.sun() + 0.2) / 0.4))
 
     def global_temp(self) -> float:
         cl = self.cfg.climate
@@ -351,6 +391,8 @@ class GenesisEnv:
             else:
                 self.weather = CLEAR
             self.fresh_now = self.fresh & ~(self.world["stream"] & (self.drought_left > 0))
+            if hasattr(self, "img"):
+                self.refresh_img()
             # fire ignition
             season_f = [0.5, 1.5, 1.0, 0.2][s]
             p_fire = dc.fire_ignition_per_day * season_f * (4.0 if self.drought_left > 0 else 1.0)
@@ -372,11 +414,20 @@ class GenesisEnv:
         P[P_RAINING] = 1.0 if self.weather == RAIN else 0.0
         P[P_NIGHT] = self.night_level()
         P[P_DROUGHT] = 1.0 if self.drought_left > 0 else 0.0
+        P[P_FAUNA_BREED] = 1.0 if self.season in self.cfg.fauna.breeding_seasons else 0.0
 
     # ------------------------------------------------------------------------------------
     # disturbances (natural or manual; all logged)
     def trigger_fire(self, x: int, y: int, source="manual"):
         self.fire[y, x] = self.cfg.disturbances.fire_burn_ticks
+        b = self.fire_box
+        if self.n_fire == 0:
+            b[:] = (y - 1, y + 1, x - 1, x + 1)
+        else:
+            b[:] = (min(b[0], y - 1), max(b[1], y + 1), min(b[2], x - 1), max(b[3], x + 1))
+        self.n_fire = max(self.n_fire, 1)
+        if hasattr(self, "img"):
+            K.img_fire(self.img, self.fire, y, x)
         self._log_env_event(EV_FIRE_START, x, y, 1.0 if source == "manual" else 0.0)
         if source == "manual":
             self.manual_log.append(dict(tick=self.tick, kind="fire", x=x, y=y))
@@ -388,6 +439,7 @@ class GenesisEnv:
         yy, xx = np.ogrid[:self.H, :self.W]
         region = ((yy - y) ** 2 + (xx - x) ** 2 <= radius ** 2) & self.floodplain
         self.flood[region] = np.maximum(self.flood[region], days * self.tpd)
+        self.refresh_img()
         self._log_env_event(EV_FLOOD_START, x, y, float(region.sum()))
         if source == "manual":
             self.manual_log.append(dict(tick=self.tick, kind="flood", x=x, y=y, days=days))
@@ -401,6 +453,7 @@ class GenesisEnv:
         self.drought_left = days
         self.weather = CLEAR
         self.fresh_now = self.fresh & ~self.world["stream"]
+        self.refresh_img()
         self._log_env_event(EV_DROUGHT_START, value=days)
         self.manual_log.append(dict(tick=self.tick, kind="drought", days=days))
 
@@ -408,6 +461,14 @@ class GenesisEnv:
         self.cold_snap_left = days
         self._log_env_event(EV_COLD_SNAP_START, value=days)
         self.manual_log.append(dict(tick=self.tick, kind="cold_snap", days=days))
+
+    def refresh_img(self):
+        """Rebuild the observation image and line-of-sight masks from scratch (after direct edits to
+        world arrays; terrain only changes in tests)."""
+        K.build_vismask(self.terrain, self.OFF, self.PARENT, self.vismask)
+        K.img_rebuild(self.img, self.terrain, self.fresh_now, self.flood, self.built, self.plant, self.tree_at,
+                      self.tree_fruit, float(self.cfg.resources.fruit_max), self.food_item, self.fidx, self.FI,
+                      self.FF, self.fire, self.snow)
 
     # ------------------------------------------------------------------------------------
     def _drive(self) -> np.ndarray:
@@ -422,86 +483,53 @@ class GenesisEnv:
         rc, ac, cap = c.resources, c.agents, c.capabilities
         actions = np.asarray(actions, dtype=np.int64)
         assert actions.shape == (self.N,), f"actions must have shape ({self.N},)"
-        self.I[:, I_DIED_NOW] = 0
-        self.I[:, I_BORN_NOW] = 0
-        self.I[:, I_REPRODUCED_NOW] = 0
-        self.n_ev[0] = 0
+        # n_ev is NOT reset here: events logged by manual triggers between steps belong to this tick
         new_day = self.tick % self.tpd == 0 and self.tick > 0
         self._climate_tick(new_day)
         P = self.P
-
-        order = permutation(self.seed, self.tick, K.ST_ORDER, self.N)
-        K.agents_step(P, actions, order, self.A, self.I, self.S, self.G, self.HIST, self.occ, self.terrain,
-                      self.elev, self.fresh_now, self.flood, self.plant, self.tree_at, self.tree_fruit,
-                      self.food_item, self.item_owner, self.wood, self.built, self.fire, self.snow,
-                      self.fidx, self.FF, self.FI, self.fcount, self.EV, self.n_ev)
-        forder = permutation(self.seed, self.tick, K.ST_ORDER + 50, self.FI.shape[0])
-        K.build_threat_grid(self.I, self.FI, self.tgrid)
-        K.prey_proposals(P, self.FF, self.FI, self.fidx, self.occ, self.terrain, self.plant, self.built,
-                         self.fire, self.tgrid, self.fprop)
-        K.fauna_step(P, forder, self.FF, self.FI, self.fidx, self.fcount, self.occ, self.terrain, self.plant,
-                     self.food_item, self.item_owner, self.built, self.fire, self.A, self.I, self.S,
-                     self.EV, self.n_ev, self.fprop)
+        N = self.N
+        rewards = np.empty(N, np.float32)
+        died = np.empty(N, np.bool_)
+        if not hasattr(self, "_setpoint"):
+            self._setpoint = np.asarray(c.reward.setpoint, np.float64)
         dt = c.time.veg_every
-        if self.tick % dt == 0:
-            K.vegetation_step(P, dt, self.growth_mult(), rc.plant_growth_rate, rc.plant_seed_floor, rc.wood_regrow,
-                              rc.meat_decay, self.plant, self.fertility, self.terrain, self.elev, self.fire,
-                              self.flood, self.snow, self.wood, self.food_item, self.item_owner, self.built)
-        fruit_ok = self.famine_left == 0
-        K.trees_step(self.tree_x, self.tree_y, self.tree_season, self.tree_fruit, self.tree_state, self.tree_at,
-                     self.fire, self.season, fruit_ok, rc.fruit_rate, rc.fruit_rot, float(rc.fruit_max))
-        if self.n_fire > 0 or (self.fire > 0).any():
-            dryness = 1.6 if self.drought_left > 0 else [0.7, 1.2, 1.0, 0.5][self.season]
-            self.n_fire = K.fire_step(P, c.disturbances.fire_spread_prob, c.disturbances.fire_burn_ticks, dryness,
-                                      self.fire, self.ignite, self.terrain, self.plant, self.wood, self.built,
-                                      self.flood)
-
-        # rewards for agents alive at the start of this tick (incl. those who just died)
-        drive = self._drive()
-        died = self.I[:, I_DIED_NOW] == 1
-        rewards = (self._prev_drive - drive).astype(np.float32)
-        rewards[died] += c.reward.death_penalty
-
-        # births / respawns
-        border = permutation(self.seed, self.tick, K.ST_ORDER + 99, self.N)
-        if cap.reproduction:
-            rp = c.reproduction
-            self.next_uid = K.births_step(P, self.next_uid, self.maturity, rp.energy_threshold,
-                                          rp.hydration_threshold, rp.cost, int(rp.cooldown_years * self.year_len),
-                                          ac.mutation_std, self.lifespan_lo, self.lifespan_hi, border, self.A,
-                                          self.I, self.S, self.G, self.HIST, self.occ, self.terrain, self.fidx,
-                                          self.EV, self.n_ev)
-            rewards[self.I[:, I_REPRODUCED_NOW] == 1] += c.reward.reproduction_bonus
-        elif ac.respawn:
-            dead_slots = np.flatnonzero(died).astype(np.int64)
-            if dead_slots.size:
-                self.next_uid = K.respawn_step(P, self.next_uid, ac.n_genes, self.lifespan_lo, self.lifespan_hi,
-                                               dead_slots, self.A, self.I, self.S, self.G, self.HIST, self.occ,
-                                               self.terrain, self.fidx, self.spawn_ok, self.EV, self.n_ev)
-        # a slot that died AND was refilled this tick still reports the dead agent's transition
-        born = self.I[:, I_BORN_NOW] == 1
-        alive_before = ((self.I[:, I_ALIVE] == 1) & ~born) | died
-        rewards[~alive_before] = 0.0
-        self._prev_drive = self._drive()
-
-        # events
-        n = min(int(self.n_ev[0]), self.EV.shape[0])
-        if self.n_ev[0] > self.EV.shape[0]:
+        do_veg = self.tick % dt == 0
+        b = self.fire_box
+        dc = c.disturbances
+        rp = c.reproduction
+        born = np.empty(N, np.bool_)
+        alive = np.empty(N, np.bool_)
+        o = self._obs_buffers()
+        self.n_fire, self.next_uid, n_ev = K.world_tick(
+            P, actions, self.A, self.I, self.S, self.G, self.HIST, self.occ, self.terrain, self.elev, self.fresh_now,
+            self.flood, self.plant, self.fertility, self.tree_x, self.tree_y, self.tree_season, self.tree_fruit,
+            self.tree_state, self.tree_at, self.food_item, self.item_owner, self.wood, self.built, self.fire,
+            self.ignite, self.snow, self.fidx, self.FF, self.FI, self.FP, self.fcount, self.fstat, self.tgrid,
+            self.fprop, self.EV, self.n_ev, self.img, self.fire_box, self._row_min, self._row_max,
+            self._prev_drive, self._setpoint, rewards, died, born, alive,
+            bool(self.fcount[0] + self.fcount[1] > 700), do_veg, dt, self.growth_mult() if do_veg else 0.0,
+            rc.plant_growth_rate, rc.plant_seed_floor, rc.wood_regrow, rc.meat_decay,
+            self.season, self.famine_left == 0, rc.fruit_rate, rc.fruit_rot, float(rc.fruit_max),
+            self.n_fire, bool((b[1] - b[0] + 1) * (b[3] - b[2] + 1) > 20000), dc.fire_spread_prob,
+            dc.fire_burn_ticks, 1.6 if self.drought_left > 0 else (0.7, 1.2, 1.0, 0.5)[self.season],
+            float(c.reward.death_penalty),
+            2 if cap.reproduction else (1 if ac.respawn else 0), self.next_uid, ac.n_genes, self.lifespan_lo,
+            self.lifespan_hi, self.spawn_ok, self.maturity, rp.energy_threshold, rp.hydration_threshold, rp.cost,
+            int(rp.cooldown_years * self.year_len), ac.mutation_std, float(c.reward.reproduction_bonus),
+            self.ev_counts, self.deaths_by_cause,
+            compute_obs, self.R, self.view_radius_now(), self.OFF, self.ODIST, bool(cap.social_learning),
+            bool(cap.reputation), bool(cap.communication), ac.hearing_radius, self.strike_idx,
+            self.img.view(np.uint64), self.vismask, o["grid"], o["grid"].view(np.uint64), o["self"],
+            o["neighbors"], o["heard"])
+        if n_ev > self.EV.shape[0]:
             raise RuntimeError("event buffer overflow; increase EV capacity")
-        ev = self.EV[:n]
-        if n:
-            types = ev[:, 1].astype(np.int64)
-            self.ev_counts += np.bincount(types, minlength=len(EVENT_NAMES))
-            dmask = types == 1
-            if dmask.any():
-                self.deaths_by_cause += np.bincount(ev[dmask, 6].astype(np.int64), minlength=len(DEATH_NAMES))
-            if self.keep_events:
-                self.event_log.append(ev.copy())
-        self.last_events = ev.copy()
+        self.last_events = self.EV[:n_ev].copy()
+        if n_ev and self.keep_events:
+            self.event_log.append(self.last_events)
+        self.n_ev[0] = 0
         self.tick += 1
-        info = {"died": died, "born": born, "alive": self.I[:, I_ALIVE] == 1, "uid": self.I[:, I_UID].copy()}
-        obs = self.observe() if compute_obs else None
-        return obs, rewards, died, info
+        info = {"died": died, "born": born, "alive": alive, "uid": self.I[:, I_UID].copy()}
+        return (o if compute_obs else None), rewards, died, info
 
     # ------------------------------------------------------------------------------------
     def view_radius_now(self) -> int:
@@ -513,17 +541,20 @@ class GenesisEnv:
             r = min(r, ac.fog_view_radius)
         return r
 
-    def observe(self) -> dict:
+    def _obs_buffers(self) -> dict:
+        """Observation arrays (reused every tick; copy them if you need to keep a tick's obs)."""
         if not hasattr(self, "_obs"):
             self._obs = {k: np.zeros((self.N,) + s, np.uint8 if k == "grid" else np.float32)
                          for k, s in self.obs_shapes.items()}
-        o, cap, ac = self._obs, self.cfg.capabilities, self.cfg.agents
-        K.build_obs(self.P, self.R, self.view_radius_now(), self.OFF, self.ODIST, self.RAY, self.RAYLEN,
-                    self.maturity, self.n_actions, bool(cap.social_learning), bool(cap.reputation),
-                    bool(cap.communication), ac.hearing_radius, self.strike_idx, self.A, self.I, self.G,
-                    self.HIST, self.occ, self.terrain, self.fresh_now, self.flood, self.plant, self.tree_at,
-                    self.tree_fruit, float(self.cfg.resources.fruit_max), self.food_item, self.fidx, self.FI,
-                    self.FF, self.fire, self.snow, self.built, o["grid"], o["self"], o["neighbors"], o["heard"])
+        return self._obs
+
+    def observe(self) -> dict:
+        o, cap, ac = self._obs_buffers(), self.cfg.capabilities, self.cfg.agents
+        K.build_obs(self.P, self.R, self.view_radius_now(), self.OFF, self.ODIST, self.maturity,
+                    bool(cap.social_learning), bool(cap.reputation), bool(cap.communication), ac.hearing_radius,
+                    self.strike_idx, self.A, self.I, self.G, self.HIST, self.occ, self.img,
+                    self.img.view(np.uint64), self.vismask, o["grid"], o["grid"].view(np.uint64), o["self"],
+                    o["neighbors"], o["heard"])
         return o
 
     # ------------------------------------------------------------------------------------
@@ -557,6 +588,9 @@ class GenesisEnv:
             m[f"deaths_{name}"] = int(self.deaths_by_cause[k])
         for k, name in enumerate(EVENT_NAMES):
             m[f"ev_{name}"] = int(self.ev_counts[k])
+        for sp, spn in enumerate(["small", "large", "pred"]):
+            for k, name in enumerate(FSTAT_NAMES):
+                m[f"fauna_{spn}_{name}"] = int(self.fstat[sp, k])
         return m
 
     def state_hash(self) -> str:

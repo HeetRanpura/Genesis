@@ -54,8 +54,98 @@ def body_free(terrain, occ, fidx, y, x):
     return t != DEEP_WATER and t != MOUNTAIN and occ[y, x] < 0 and fidx[y, x] < 0
 
 
+# =====================================================================================
+# observation image: img[y, x, c] holds every obs channel that does not depend on the observer
+# (all except visible/agent/signal). It is updated in place at every mutation site so that an
+# observation is a masked copy of 16-byte cells. tests/test_engine.py checks it against
+# img_rebuild after long random runs.
+# =====================================================================================
+@njit(cache=True, inline="always")
+def _u8(v):
+    return np.uint8(min(255.0, max(0.0, v)))
+
+
+@njit(cache=True, inline="always")
+def img_plant(img, plant, y, x):
+    img[y, x, 6] = _u8(plant[y, x] * 255.0)
+
+
+@njit(cache=True, inline="always")
+def img_food(img, food_item, y, x):
+    img[y, x, 8] = _u8(food_item[y, x] * 127.5)
+
+
+@njit(cache=True, inline="always")
+def img_fruit(img, tree_at, tree_fruit, fruit_max, y, x):
+    tr = tree_at[y, x]
+    img[y, x, 7] = _u8(40.0 + 215.0 * min(1.0, tree_fruit[tr] / fruit_max)) if tr >= 0 else 0
+
+
+@njit(cache=True, inline="always")
+def img_fauna(img, FI, FF, j):
+    """write animal j at its cell (value encodes health)."""
+    y, x = FI[j, F_Y], FI[j, F_X]
+    img[y, x, 9] = 0
+    img[y, x, 10] = 0
+    img[y, x, 11] = 0
+    img[y, x, 9 + FI[j, F_SPECIES]] = _u8(60.0 + 195.0 * min(1.0, max(0.0, FF[j, F_HEALTH])))
+
+
+@njit(cache=True, inline="always")
+def img_no_fauna(img, y, x):
+    img[y, x, 9] = 0
+    img[y, x, 10] = 0
+    img[y, x, 11] = 0
+
+
+@njit(cache=True, inline="always")
+def img_fire(img, fire, y, x):
+    f = fire[y, x]
+    img[y, x, 13] = 255 if f > 0 else (60 if f < 0 else 0)
+
+
+@njit(cache=True, inline="always")
+def img_ground(img, terrain, fresh_now, flood, built, y, x):
+    """blocked, water, forest, rock, shelter."""
+    t = terrain[y, x]
+    img[y, x, 1] = 255 if (t == DEEP_WATER or t == MOUNTAIN) else 0
+    img[y, x, 2] = 255 if (fresh_now[y, x] or flood[y, x] > 0) else (100 if (t == DEEP_WATER or t == SHALLOW) else 0)
+    img[y, x, 3] = 255 if t == FOREST else 0
+    img[y, x, 4] = 255 if (t == ROCK or t == MOUNTAIN) else 0
+    img[y, x, 5] = 255 if t == CAVE else min(255, 80 * built[y, x])
+
+
+@njit(cache=True, inline="always")
+def img_cell(img, y, x, terrain, fresh_now, flood, built, plant, tree_at, tree_fruit, fruit_max, food_item,
+             fidx, FI, FF, fire, snow):
+    img_ground(img, terrain, fresh_now, flood, built, y, x)
+    img_plant(img, plant, y, x)
+    img_fruit(img, tree_at, tree_fruit, fruit_max, y, x)
+    img_food(img, food_item, y, x)
+    j = fidx[y, x]
+    if j >= 0:
+        img_fauna(img, FI, FF, j)
+    else:
+        img_no_fauna(img, y, x)
+    img_fire(img, fire, y, x)
+    img[y, x, 15] = _u8(snow[y, x] * 255.0)
+
+
+@njit(cache=True, parallel=True)
+def img_rebuild(img, terrain, fresh_now, flood, built, plant, tree_at, tree_fruit, fruit_max, food_item,
+                fidx, FI, FF, fire, snow):
+    h, w = terrain.shape
+    for y in prange(h):
+        for x in range(w):
+            img[y, x, 0] = 255     # "visible": copied only for visible cells, so constant here
+            img[y, x, 12] = 0
+            img[y, x, 14] = 0
+            img_cell(img, y, x, terrain, fresh_now, flood, built, plant, tree_at, tree_fruit, fruit_max,
+                     food_item, fidx, FI, FF, fire, snow)
+
+
 @njit(cache=True)
-def kill_agent(i, cause, A, I, occ, food_item, item_owner, EV, n_ev, tick):
+def kill_agent(i, cause, A, I, occ, food_item, item_owner, EV, n_ev, tick, img):
     x, y = I[i, I_X], I[i, I_Y]
     I[i, I_ALIVE] = 0
     I[i, I_DIED_NOW] = 1
@@ -64,13 +154,16 @@ def kill_agent(i, cause, A, I, occ, food_item, item_owner, EV, n_ev, tick):
     if I[i, I_CARRY_TYPE] == CARRY_FOOD and A[i, A_CARRY_AMT] > 0:
         food_item[y, x] += A[i, A_CARRY_AMT]
         item_owner[y, x] = I[i, I_UID]
+        img_food(img, food_item, y, x)
     I[i, I_CARRY_TYPE] = CARRY_NONE
     A[i, A_CARRY_AMT] = 0.0
     push_event(EV, n_ev, tick, EV_DEATH, I[i, I_UID], I[i, I_AGE], x, y, cause)
 
 
 @njit(cache=True)
-def kill_fauna(j, FI, fidx, fcount):
+def kill_fauna(j, FI, fidx, fcount, img, fstat, cause):
+    fstat[FI[j, F_SPECIES], cause] += 1
+    img_no_fauna(img, FI[j, F_Y], FI[j, F_X])
     FI[j, F_ALIVE] = 0
     fidx[FI[j, F_Y], FI[j, F_X]] = -1
     fcount[FI[j, F_SPECIES]] -= 1
@@ -106,8 +199,9 @@ def effective_temp(P, i, x, y, terrain, elev, built, snow, occ, resting):
 @njit(cache=True)
 def agents_step(P, actions, order, A, I, S, G, HIST, occ, terrain, elev, fresh_now, flood,
                 plant, tree_at, tree_fruit, food_item, item_owner, wood, built, fire, snow,
-                fidx, FF, FI, fcount, EV, n_ev):
+                fidx, FF, FI, fcount, EV, n_ev, img, fstat):
     seed = np.int64(P[P_SEED])
+    fruit_max = P[P_FRUIT_MAX]
     tick = np.int64(P[P_TICK])
     h, w = terrain.shape
     hist_len = np.int64(P[P_HIST_LEN])
@@ -165,6 +259,7 @@ def agents_step(P, actions, order, A, I, S, G, HIST, occ, terrain, elev, fresh_n
                     if 0 <= cx < w and 0 <= cy < h and food_item[cy, cx] > 1e-6:
                         bite = min(P[P_MEAT_BITE], food_item[cy, cx])
                         food_item[cy, cx] -= bite
+                        img_food(img, food_item, cy, cx)
                         gained = bite * P[P_MEAT_E]
                         owner = item_owner[cy, cx]
                         if owner != 0 and owner != uid:
@@ -178,12 +273,14 @@ def agents_step(P, actions, order, A, I, S, G, HIST, occ, terrain, elev, fresh_n
                             tr = tree_at[cy, cx]
                             if tr >= 0 and tree_fruit[tr] >= 1.0:
                                 tree_fruit[tr] -= 1.0
+                                img_fruit(img, tree_at, tree_fruit, fruit_max, cy, cx)
                                 gained = P[P_FRUIT_E]
                                 push_event(EV, n_ev, tick, EV_EAT_FRUIT, uid, 0, cx, cy, gained)
                                 break
                 if gained == 0.0 and plant[y, x] > 0.01:
                     bite = min(P[P_PLANT_BITE], plant[y, x])
                     plant[y, x] -= bite
+                    img_plant(img, plant, y, x)
                     gained = bite * P[P_PLANT_E]
                     push_event(EV, n_ev, tick, EV_EAT_PLANT, uid, 0, x, y, gained)
             A[i, A_ENERGY] = min(1.0, A[i, A_ENERGY] + gained)
@@ -217,9 +314,10 @@ def agents_step(P, actions, order, A, I, S, G, HIST, occ, terrain, elev, fresh_n
                 fx, fy = FI[j, F_X], FI[j, F_Y]
                 if sp == SMALL_PREY:
                     if uniform(seed, tick, i, ST_HUNT) < 0.6:
-                        kill_fauna(j, FI, fidx, fcount)
+                        kill_fauna(j, FI, fidx, fcount, img, fstat, FS_HUNTED)
                         food_item[fy, fx] += P[P_SMALL_E]
                         item_owner[fy, fx] = uid
+                        img_food(img, food_item, fy, fx)
                         S[i, S_KILL_SMALL] += 1
                         push_event(EV, n_ev, tick, EV_KILL_SMALL, uid, 0, fx, fy, P[P_SMALL_E])
                 elif sp == LARGE_PREY:
@@ -240,14 +338,17 @@ def agents_step(P, actions, order, A, I, S, G, HIST, occ, terrain, elev, fresh_n
                             n_att += 1
                     FF[j, F_HEALTH] -= 0.35 * size
                     FI[j, F_FLEE] = 12
+                    img_fauna(img, FI, FF, j)
                     push_event(EV, n_ev, tick, EV_ATTACK_LARGE, uid, j, fx, fy, n_att)
                     if FF[j, F_HEALTH] <= 0.0:
                         if P[P_COOP_LARGE] > 0 and n_att < P[P_MIN_ATTACKERS]:
                             FF[j, F_HEALTH] = 0.05      # wounded but escapes a lone hunter
+                            img_fauna(img, FI, FF, j)
                         else:
-                            kill_fauna(j, FI, fidx, fcount)
+                            kill_fauna(j, FI, fidx, fcount, img, fstat, FS_HUNTED)
                             food_item[fy, fx] += P[P_LARGE_E]
                             item_owner[fy, fx] = uid
+                            img_food(img, food_item, fy, fx)
                             S[i, S_KILL_LARGE] += 1
                             push_event(EV, n_ev, tick, EV_KILL_LARGE, uid, n_att, fx, fy, P[P_LARGE_E])
                     if uniform(seed, tick, i, ST_KICK) < 0.1:   # kicked
@@ -257,10 +358,12 @@ def agents_step(P, actions, order, A, I, S, G, HIST, occ, terrain, elev, fresh_n
                 else:  # predator
                     FF[j, F_HEALTH] -= 0.3 * size
                     FI[j, F_FLEE] = 25
+                    img_fauna(img, FI, FF, j)
                     if FF[j, F_HEALTH] <= 0.0:
-                        kill_fauna(j, FI, fidx, fcount)
+                        kill_fauna(j, FI, fidx, fcount, img, fstat, FS_HUNTED)
                         food_item[fy, fx] += 0.8
                         item_owner[fy, fx] = uid
+                        img_food(img, food_item, fy, fx)
         elif a == PICKUP:
             ct = I[i, I_CARRY_TYPE]
             room = P[P_CARRY_CAP] - (A[i, A_CARRY_AMT] if ct == CARRY_FOOD else 0.0)
@@ -269,6 +372,7 @@ def agents_step(P, actions, order, A, I, S, G, HIST, occ, terrain, elev, fresh_n
                 if food_item[y, x] > 1e-6:
                     take = min(room, food_item[y, x])
                     food_item[y, x] -= take
+                    img_food(img, food_item, y, x)
                     A[i, A_CARRY_AMT] += take
                     I[i, I_CARRY_TYPE] = CARRY_FOOD
                     push_event(EV, n_ev, tick, EV_PICKUP_FOOD, uid, item_owner[y, x], x, y, take)
@@ -280,6 +384,7 @@ def agents_step(P, actions, order, A, I, S, G, HIST, occ, terrain, elev, fresh_n
                             tr = tree_at[cy, cx]
                             if tr >= 0 and tree_fruit[tr] >= 1.0 and room >= P[P_FRUIT_E]:
                                 tree_fruit[tr] -= 1.0
+                                img_fruit(img, tree_at, tree_fruit, fruit_max, cy, cx)
                                 A[i, A_CARRY_AMT] += P[P_FRUIT_E]
                                 I[i, I_CARRY_TYPE] = CARRY_FOOD
                                 push_event(EV, n_ev, tick, EV_PICKUP_FOOD, uid, 0, cx, cy, P[P_FRUIT_E])
@@ -298,6 +403,7 @@ def agents_step(P, actions, order, A, I, S, G, HIST, occ, terrain, elev, fresh_n
                 amt = A[i, A_CARRY_AMT]
                 food_item[y, x] += amt
                 item_owner[y, x] = uid
+                img_food(img, food_item, y, x)
                 S[i, S_FOOD_DROPPED] += amt
                 push_event(EV, n_ev, tick, EV_DROP_FOOD, uid, 0, x, y, amt)
             I[i, I_CARRY_TYPE] = CARRY_NONE
@@ -307,6 +413,7 @@ def agents_step(P, actions, order, A, I, S, G, HIST, occ, terrain, elev, fresh_n
             t = terrain[y, x]
             if (ct == CARRY_WOOD or ct == CARRY_STONE) and t != SHALLOW and built[y, x] < 3:
                 built[y, x] += 1
+                img[y, x, 5] = 255 if t == CAVE else min(255, 80 * built[y, x])
                 I[i, I_CARRY_TYPE] = CARRY_NONE
                 A[i, A_CARRY_AMT] = 0.0
                 S[i, S_BUILDS] += 1
@@ -324,11 +431,12 @@ def agents_step(P, actions, order, A, I, S, G, HIST, occ, terrain, elev, fresh_n
                     if I[v, I_CARRY_TYPE] == CARRY_FOOD and A[v, A_CARRY_AMT] > 0:
                         food_item[cy, cx] += A[v, A_CARRY_AMT]
                         item_owner[cy, cx] = I[v, I_UID]
+                        img_food(img, food_item, cy, cx)
                         A[v, A_CARRY_AMT] = 0.0
                         I[v, I_CARRY_TYPE] = CARRY_NONE
                     push_event(EV, n_ev, tick, EV_STRIKE, uid, I[v, I_UID], cx, cy, P[P_STRIKE_DMG] * size)
                     if A[v, A_HEALTH] <= 0 and I[v, I_ALIVE] == 1:
-                        kill_agent(v, DEATH_STRIKE, A, I, occ, food_item, item_owner, EV, n_ev, tick)
+                        kill_agent(v, DEATH_STRIKE, A, I, occ, food_item, item_owner, EV, n_ev, tick, img)
                     break
         elif signal_idx >= 0 and signal_idx <= a < signal_idx + n_sym:
             I[i, I_SIGNAL] = a - signal_idx
@@ -382,9 +490,9 @@ def agents_step(P, actions, order, A, I, S, G, HIST, occ, terrain, elev, fresh_n
             I[i, I_REPRO_COOLDOWN] -= 1
         if A[i, A_HEALTH] <= 0.0:
             A[i, A_HEALTH] = 0.0
-            kill_agent(i, I[i, I_LAST_CAUSE], A, I, occ, food_item, item_owner, EV, n_ev, tick)
+            kill_agent(i, I[i, I_LAST_CAUSE], A, I, occ, food_item, item_owner, EV, n_ev, tick, img)
         elif I[i, I_AGE] >= I[i, I_LIFESPAN]:
-            kill_agent(i, DEATH_OLD_AGE, A, I, occ, food_item, item_owner, EV, n_ev, tick)
+            kill_agent(i, DEATH_OLD_AGE, A, I, occ, food_item, item_owner, EV, n_ev, tick, img)
 
 
 # =====================================================================================
@@ -424,14 +532,16 @@ def _fauna_cell_ok(sp, terrain, occ, fidx, built, fire, y, x):
 
 
 @njit(cache=True, inline="always")
-def _move_fauna(j, nx, ny, FI, fidx):
+def _move_fauna(j, nx, ny, FI, FF, fidx, img):
+    img_no_fauna(img, FI[j, F_Y], FI[j, F_X])
     fidx[FI[j, F_Y], FI[j, F_X]] = -1
     FI[j, F_X], FI[j, F_Y] = nx, ny
     fidx[ny, nx] = j
+    img_fauna(img, FI, FF, j)
 
 
 @njit(cache=True)
-def _step_toward(j, sp, tx, ty, away, FI, terrain, occ, fidx, built, fire):
+def _step_toward(j, sp, tx, ty, away, FI, FF, terrain, occ, fidx, built, fire, img):
     """greedy 4-neighbour step toward (or away from) a target."""
     x, y = FI[j, F_X], FI[j, F_Y]
     best_d, bx, by = -1.0, -1, -1
@@ -444,11 +554,11 @@ def _step_toward(j, sp, tx, ty, away, FI, terrain, occ, fidx, built, fire):
         if bx < 0 or score > best_d:
             best_d, bx, by = score, nx, ny
     if bx >= 0:
-        _move_fauna(j, bx, by, FI, fidx)
+        _move_fauna(j, bx, by, FI, FF, fidx, img)
 
 
 @njit(cache=True)
-def _spawn_fauna(sp, x, y, energy, FF, FI, fidx, fcount):
+def _spawn_fauna(sp, x, y, energy, FF, FI, fidx, fcount, img):
     """fcount[3] is a rotating free-slot hint so spawning is O(1) amortised."""
     M = FI.shape[0]
     for k in range(M):
@@ -462,6 +572,7 @@ def _spawn_fauna(sp, x, y, energy, FF, FI, fidx, fcount):
             FF[j, F_HEALTH] = 1.0
             fidx[y, x] = j
             fcount[sp] += 1
+            img_fauna(img, FI, FF, j)
             return j
     return -1
 
@@ -516,66 +627,88 @@ def _best_step(sp, x, y, tx, ty, away, terrain, occ, fidx, built, fire):
     return bx, by
 
 
+@njit(cache=True, inline="always")
+def _prey_decide(j, seed, tick, flee_r, h, w, FF, FI, fidx, occ, terrain, plant, built, fire, tgrid, prop):
+    """One prey animal's movement decision from start-of-phase state (no shared RNG, no writes
+    except prop[j]), so the drivers below may run it in any order or in parallel."""
+    prop[j, 0] = -1
+    prop[j, 1] = -1
+    if FI[j, F_ALIVE] == 0:
+        return
+    sp = FI[j, F_SPECIES]
+    if sp == PREDATOR:
+        return
+    x, y = FI[j, F_X], FI[j, F_Y]
+    u = uniform(seed, tick, j, ST_FAUNA_MOVE)
+    r = flee_r if sp == SMALL_PREY else 3
+    p_move = 0.6 if sp == SMALL_PREY else 0.25 + 0.4 * FF[j, F_HEALTH]
+    d2, tx, ty = -1, 0, 0
+    if u < p_move:
+        d2, tx, ty = _nearest_threat_blocks(x, y, r, occ, fidx, FI, tgrid, h, w)
+    bx, by = -1, -1
+    if d2 >= 0:
+        bx, by = _best_step(sp, x, y, tx, ty, True, terrain, occ, fidx, built, fire)
+    elif sp == LARGE_PREY and u < 0.12:
+        # loose herding toward local conspecific centroid
+        sx, sy, n = 0, 0, 0
+        for dy in range(-5, 6):
+            for dx in range(-5, 6):
+                cy, cx = y + dy, x + dx
+                if 0 <= cy < h and 0 <= cx < w and fidx[cy, cx] >= 0 and fidx[cy, cx] != j \
+                        and FI[fidx[cy, cx], F_SPECIES] == LARGE_PREY:
+                    sx += cx
+                    sy += cy
+                    n += 1
+        if n > 0:
+            bx, by = _best_step(sp, x, y, sx // n, sy // n, False, terrain, occ, fidx, built, fire)
+    elif u < 0.35:
+        # graze toward the best neighbouring plant cell (random tie-break)
+        best = plant[y, x] + 0.02
+        k0 = randint(seed, tick, j, ST_FAUNA, 4)
+        for k in range(4):
+            d = 1 + (k0 + k) % 4
+            nx, ny = x + DX4[d], y + DY4[d]
+            if _fauna_cell_ok(sp, terrain, occ, fidx, built, fire, ny, nx) and plant[ny, nx] > best:
+                best, bx, by = plant[ny, nx], nx, ny
+        # wander when the neighbourhood is grazed out (probability higher on bare ground)
+        if bx < 0 and (u < 0.12 or plant[y, x] < 0.1):
+            d = 1 + randint(seed, tick, j, ST_FAUNA + 100, 4)
+            nx, ny = x + DX4[d], y + DY4[d]
+            if _fauna_cell_ok(sp, terrain, occ, fidx, built, fire, ny, nx):
+                bx, by = nx, ny
+    prop[j, 0] = bx
+    prop[j, 1] = by
+
+
 @njit(cache=True, parallel=True)
 def prey_proposals(P, FF, FI, fidx, occ, terrain, plant, built, fire, tgrid, prop):
-    """Parallel phase: every prey animal decides where it wants to step, reading only the
-    start-of-phase state (simultaneous update); conflicts are resolved sequentially in fauna_step."""
-    seed = np.int64(P[P_SEED])
-    tick = np.int64(P[P_TICK])
+    """Every prey animal decides where it wants to step, reading only the start-of-phase state
+    (simultaneous update); conflicts are resolved sequentially in fauna_step."""
     h, w = terrain.shape
-    flee_r = np.int64(P[P_FLEE_R])
     for j in prange(FI.shape[0]):
-        prop[j, 0] = -1
-        prop[j, 1] = -1
-        if FI[j, F_ALIVE] == 0:
+        if FI[j, F_ALIVE] == 0 or FI[j, F_SPECIES] == PREDATOR:
+            prop[j, 0] = -1
             continue
-        sp = FI[j, F_SPECIES]
-        if sp == PREDATOR:
+        _prey_decide(j, np.int64(P[P_SEED]), np.int64(P[P_TICK]), np.int64(P[P_FLEE_R]), h, w, FF, FI, fidx,
+                     occ, terrain, plant, built, fire, tgrid, prop)
+
+
+@njit(cache=True)
+def prey_proposals_seq(P, FF, FI, fidx, occ, terrain, plant, built, fire, tgrid, prop):
+    """Sequential twin of prey_proposals (identical output; cheaper below ~700 prey, where a
+    parallel launch costs more than the work)."""
+    h, w = terrain.shape
+    for j in range(FI.shape[0]):
+        if FI[j, F_ALIVE] == 0 or FI[j, F_SPECIES] == PREDATOR:
+            prop[j, 0] = -1
             continue
-        x, y = FI[j, F_X], FI[j, F_Y]
-        u = uniform(seed, tick, j, ST_FAUNA_MOVE)
-        r = flee_r if sp == SMALL_PREY else 3
-        p_move = 0.6 if sp == SMALL_PREY else 0.25 + 0.4 * FF[j, F_HEALTH]
-        d2, tx, ty = -1, 0, 0
-        if u < p_move:
-            d2, tx, ty = _nearest_threat_blocks(x, y, r, occ, fidx, FI, tgrid, h, w)
-        bx, by = -1, -1
-        if d2 >= 0:
-            bx, by = _best_step(sp, x, y, tx, ty, True, terrain, occ, fidx, built, fire)
-        elif sp == LARGE_PREY and u < 0.12:
-            # loose herding toward local conspecific centroid
-            sx, sy, n = 0, 0, 0
-            for dy in range(-5, 6):
-                for dx in range(-5, 6):
-                    cy, cx = y + dy, x + dx
-                    if 0 <= cy < h and 0 <= cx < w and fidx[cy, cx] >= 0 and fidx[cy, cx] != j \
-                            and FI[fidx[cy, cx], F_SPECIES] == LARGE_PREY:
-                        sx += cx
-                        sy += cy
-                        n += 1
-            if n > 0:
-                bx, by = _best_step(sp, x, y, sx // n, sy // n, False, terrain, occ, fidx, built, fire)
-        elif u < 0.35:
-            # graze toward the best neighbouring plant cell (random tie-break)
-            best = plant[y, x] + 0.02
-            k0 = randint(seed, tick, j, ST_FAUNA, 4)
-            for k in range(4):
-                d = 1 + (k0 + k) % 4
-                nx, ny = x + DX4[d], y + DY4[d]
-                if _fauna_cell_ok(sp, terrain, occ, fidx, built, fire, ny, nx) and plant[ny, nx] > best:
-                    best, bx, by = plant[ny, nx], nx, ny
-            if bx < 0 and u < 0.12:
-                d = 1 + randint(seed, tick, j, ST_FAUNA + 100, 4)
-                nx, ny = x + DX4[d], y + DY4[d]
-                if _fauna_cell_ok(sp, terrain, occ, fidx, built, fire, ny, nx):
-                    bx, by = nx, ny
-        prop[j, 0] = bx
-        prop[j, 1] = by
+        _prey_decide(j, np.int64(P[P_SEED]), np.int64(P[P_TICK]), np.int64(P[P_FLEE_R]), h, w, FF, FI, fidx,
+                     occ, terrain, plant, built, fire, tgrid, prop)
 
 
 @njit(cache=True)
 def fauna_step(P, order, FF, FI, fidx, fcount, occ, terrain, plant, food_item, item_owner, built,
-               fire, A, I, S, EV, n_ev, prop):
+               fire, A, I, S, EV, n_ev, prop, img, FP, fstat, wood):
     """Sequential phase: bookkeeping, prey moves proposed by prey_proposals, predators, births."""
     seed = np.int64(P[P_SEED])
     tick = np.int64(P[P_TICK])
@@ -583,9 +716,7 @@ def fauna_step(P, order, FF, FI, fidx, fcount, occ, terrain, plant, food_item, i
     night = P[P_NIGHT] > 0.5
     flee_r = np.int64(P[P_FLEE_R])
     sense = np.int64(P[P_PRED_SENSE])
-    max_age = np.array([12000, 20000, 20000])
-    decay = np.array([0.0015, 0.0012, 0.0016])
-    repro_rate = np.array([0.008, 0.0015, 0.0012])
+    cold = P[P_FAUNA_COLD] if P[P_T_GLOBAL] < 5.0 else 1.0     # torpor: lower metabolism when cold
     for oi in range(order.shape[0]):
         j = order[oi]
         if FI[j, F_ALIVE] == 0:
@@ -593,32 +724,42 @@ def fauna_step(P, order, FF, FI, fidx, fcount, occ, terrain, plant, food_item, i
         sp = FI[j, F_SPECIES]
         x, y = FI[j, F_X], FI[j, F_Y]
         FI[j, F_AGE] += 1
-        FF[j, F_ENERGY] -= decay[sp]
-        if fire[y, x] > 0 or FF[j, F_ENERGY] <= 0 or FI[j, F_AGE] > max_age[sp]:
-            kill_fauna(j, FI, fidx, fcount)
+        FF[j, F_ENERGY] -= FP[sp, FP_METAB] * cold
+        if fire[y, x] > 0 or FF[j, F_ENERGY] <= 0 or FI[j, F_AGE] > FP[sp, FP_MAX_AGE]:
+            cause = FS_FIRE if fire[y, x] > 0 else (FS_STARVED if FF[j, F_ENERGY] <= 0 else FS_OLD)
+            kill_fauna(j, FI, fidx, fcount, img, fstat, cause)
             continue
         u = uniform(seed, tick, j, ST_FAUNA_MOVE)
         if sp == SMALL_PREY or sp == LARGE_PREY:
             if sp == LARGE_PREY and FF[j, F_HEALTH] < 1.0:
                 FF[j, F_HEALTH] = min(1.0, FF[j, F_HEALTH] + 0.004)
+                img_fauna(img, FI, FF, j)
             if FI[j, F_FLEE] > 0:
                 FI[j, F_FLEE] -= 1
             bx, by = prop[j, 0], prop[j, 1]      # decided in parallel by prey_proposals
             if bx >= 0 and _fauna_cell_ok(sp, terrain, occ, fidx, built, fire, by, bx):
-                _move_fauna(j, bx, by, FI, fidx)
+                _move_fauna(j, bx, by, FI, FF, fidx, img)
             x, y = FI[j, F_X], FI[j, F_Y]
-            bite = 0.03 if sp == SMALL_PREY else 0.06
-            if FF[j, F_ENERGY] < 0.85 and plant[y, x] > bite:   # graze only when not sated
+            bite = min(FP[sp, FP_BITE], plant[y, x])
+            if FF[j, F_ENERGY] < FP[sp, FP_SAT] and bite > 0.005:   # graze only when not sated
                 plant[y, x] -= bite
-                FF[j, F_ENERGY] = min(1.0, FF[j, F_ENERGY] + bite * (1.4 if sp == SMALL_PREY else 0.9))
+                img_plant(img, plant, y, x)
+                FF[j, F_ENERGY] = min(1.0, FF[j, F_ENERGY] + bite * FP[sp, FP_CONV])
+            elif FP[sp, FP_BROWSE] > 0 and FF[j, F_ENERGY] < FP[sp, FP_SAT] and terrain[y, x] == FOREST \
+                    and wood[y, x] > 0.05:
+                # browsers (large prey) also eat woody forage in forests, which grazers cannot use
+                b = min(FP[sp, FP_BITE], wood[y, x])
+                wood[y, x] -= b
+                FF[j, F_ENERGY] = min(1.0, FF[j, F_ENERGY] + b * FP[sp, FP_BROWSE])
         else:  # predator
             if FF[j, F_HEALTH] < 1.0:
                 FF[j, F_HEALTH] = min(1.0, FF[j, F_HEALTH] + 0.002)
+                img_fauna(img, FI, FF, j)
             if FI[j, F_FLEE] > 0:
                 FI[j, F_FLEE] -= 1
                 d2, tx, ty = _nearest_threat(x, y, sense, occ, fidx, FI, False, h, w)
                 if d2 >= 0:
-                    _step_toward(j, sp, tx, ty, True, FI, terrain, occ, fidx, built, fire)
+                    _step_toward(j, sp, tx, ty, True, FI, FF, terrain, occ, fidx, built, fire, img)
             else:
                 # nearest target: agent or prey
                 best_d, tx, ty, tk, tj = -1, 0, 0, -1, -1
@@ -651,39 +792,44 @@ def fauna_step(P, order, FF, FI, fidx, fcount, occ, terrain, plant, food_item, i
                             push_event(EV, n_ev, tick, EV_PREDATOR_ATTACK, I[tj, I_UID], j, tx, ty, dmg)
                             if A[tj, A_HEALTH] <= 0.0:
                                 A[tj, A_HEALTH] = 0.0
-                                kill_agent(tj, DEATH_PREDATOR, A, I, occ, food_item, item_owner, EV, n_ev, tick)
-                                FF[j, F_ENERGY] = min(1.0, FF[j, F_ENERGY] + 0.6)
+                                kill_agent(tj, DEATH_PREDATOR, A, I, occ, food_item, item_owner, EV, n_ev, tick, img)
+                                FF[j, F_ENERGY] = min(1.0, FF[j, F_ENERGY] + FP[sp, FP_GAIN_AGENT])
                     else:
                         if FI[tj, F_SPECIES] == SMALL_PREY:
                             if uniform(seed, tick, j, ST_PRED) < 0.5:
-                                kill_fauna(tj, FI, fidx, fcount)
-                                FF[j, F_ENERGY] = min(1.0, FF[j, F_ENERGY] + 0.45)
+                                kill_fauna(tj, FI, fidx, fcount, img, fstat, FS_EATEN)
+                                FF[j, F_ENERGY] = min(1.0, FF[j, F_ENERGY] + FP[sp, FP_GAIN_SMALL])
                         else:
                             FF[tj, F_HEALTH] -= 0.15
                             FI[tj, F_FLEE] = 10
+                            img_fauna(img, FI, FF, tj)
                             if FF[tj, F_HEALTH] <= 0:
-                                kill_fauna(tj, FI, fidx, fcount)
-                                FF[j, F_ENERGY] = 1.0
+                                kill_fauna(tj, FI, fidx, fcount, img, fstat, FS_EATEN)
+                                FF[j, F_ENERGY] = min(1.0, FF[j, F_ENERGY] + FP[sp, FP_GAIN_LARGE])
                                 food_item[ty, tx] += 0.6 * P[P_LARGE_E]   # leftovers
+                                img_food(img, food_item, ty, tx)
                 elif best_d > 1:
                     p_move = 0.85 if night else 0.55
                     if u < p_move:
-                        _step_toward(j, sp, tx, ty, False, FI, terrain, occ, fidx, built, fire)
+                        _step_toward(j, sp, tx, ty, False, FI, FF, terrain, occ, fidx, built, fire, img)
                 elif u < 0.4:
                     d = 1 + randint(seed, tick, j, ST_FAUNA, 4)
                     nx, ny = x + DX4[d], y + DY4[d]
                     if _fauna_cell_ok(sp, terrain, occ, fidx, built, fire, ny, nx):
-                        _move_fauna(j, nx, ny, FI, fidx)
+                        _move_fauna(j, nx, ny, FI, FF, fidx, img)
         # reproduction
-        if FI[j, F_ALIVE] == 1 and FF[j, F_ENERGY] > 0.75 and fcount[sp] < P[P_FAUNA_MAX0 + sp]:
-            rate = repro_rate[sp]
+        # births need stored energy AND standing forage where the animal is (density dependence via food)
+        if P[P_FAUNA_BREED] > 0 and FI[j, F_ALIVE] == 1 and FF[j, F_ENERGY] > FP[sp, FP_REPRO_THR] \
+                and plant[FI[j, F_Y], FI[j, F_X]] >= FP[sp, FP_BREED_FORAGE] and fcount[sp] < P[P_FAUNA_MAX0 + sp]:
+            rate = FP[sp, FP_REPRO_RATE]
             if uniform(seed, tick, j, ST_FAUNA_REPRO) < rate:
                 x, y = FI[j, F_X], FI[j, F_Y]
                 d = 1 + randint(seed, tick, j, ST_FAUNA_REPRO + 100, 4)
                 nx, ny = x + DX4[d], y + DY4[d]
                 if _fauna_cell_ok(sp, terrain, occ, fidx, built, fire, ny, nx):
                     FF[j, F_ENERGY] *= 0.5
-                    _spawn_fauna(sp, nx, ny, FF[j, F_ENERGY], FF, FI, fidx, fcount)
+                    if _spawn_fauna(sp, nx, ny, FF[j, F_ENERGY], FF, FI, fidx, fcount, img) >= 0:
+                        fstat[sp, FS_BIRTH] += 1
     # immigration keeps every species above its floor
     for sp in range(3):
         k = 0
@@ -694,7 +840,8 @@ def fauna_step(P, order, FF, FI, fidx, fcount, occ, terrain, plant, food_item, i
             t = terrain[y, x]
             good = t == GRASS or t == MEADOW or (sp == PREDATOR and t == FOREST) or (sp == SMALL_PREY and t == FOREST)
             if good and _fauna_cell_ok(sp, terrain, occ, fidx, built, fire, y, x):
-                _spawn_fauna(sp, x, y, 0.8, FF, FI, fidx, fcount)
+                if _spawn_fauna(sp, x, y, 0.8, FF, FI, fidx, fcount, img) >= 0:
+                    fstat[sp, FS_IMMIGRANT] += 1
 
 
 # =====================================================================================
@@ -702,7 +849,7 @@ def fauna_step(P, order, FF, FI, fidx, fcount, occ, terrain, plant, food_item, i
 # =====================================================================================
 @njit(cache=True, parallel=True)
 def vegetation_step(P, dt, growth_mult, rate, seed_floor, wood_regrow, meat_decay, plant, fertility,
-                    terrain, elev, fire, flood, snow, wood, food_item, item_owner, built):
+                    terrain, elev, fire, flood, snow, wood, food_item, item_owner, built, img, fresh_now):
     """Advances slow cell dynamics by `dt` ticks in one pass (called every dt ticks)."""
     seed = np.int64(P[P_SEED])
     tick = np.int64(P[P_TICK])
@@ -740,27 +887,35 @@ def vegetation_step(P, dt, growth_mult, rate, seed_floor, wood_regrow, meat_deca
                 snow[y, x] = max(0.0, s - dt * 0.0015 * T)
             if built[y, x] > 0 and uniform(seed, tick, y * w + x, ST_BUILT) < dt * 2e-5:
                 built[y, x] -= 1
+            img_ground(img, terrain, fresh_now, flood, built, y, x)
+            img_plant(img, plant, y, x)
+            img_food(img, food_item, y, x)
+            img_fire(img, fire, y, x)
+            img[y, x, 15] = _u8(snow[y, x] * 255.0)
 
 
 @njit(cache=True)
 def trees_step(tree_x, tree_y, tree_season, tree_fruit, tree_state, tree_at, fire, season, fruit_ok,
-               fruit_rate, fruit_rot, fruit_max):
+               fruit_rate, fruit_rot, fruit_max, img):
     for k in range(tree_x.shape[0]):
         x, y = tree_x[k], tree_y[k]
         if tree_state[k] < 0:              # dead (burnt): regrow countdown
             tree_state[k] += 1
             if tree_state[k] == 0:
                 tree_at[y, x] = k
+                img_fruit(img, tree_at, tree_fruit, fruit_max, y, x)
             continue
         if fire[y, x] > 0:
             tree_state[k] = -2 * 3840          # ~2 years to regrow
             tree_fruit[k] = 0.0
             tree_at[y, x] = -1
+            img[y, x, 7] = 0
             continue
         if fruit_ok and tree_season[k] == season:
             tree_fruit[k] = min(fruit_max, tree_fruit[k] + fruit_rate)
         else:
             tree_fruit[k] = max(0.0, tree_fruit[k] - fruit_rot)
+        img_fruit(img, tree_at, tree_fruit, fruit_max, y, x)
 
 
 @njit(cache=True, inline="always")
@@ -768,51 +923,99 @@ def _flammable(t):
     return t == GRASS or t == MEADOW or t == FOREST or t == BARREN
 
 
-@njit(cache=True, parallel=True)
-def fire_step(P, spread, burn_ticks, dryness, fire, ignite, terrain, plant, wood, built, flood):
-    """Returns number of burning cells after the update."""
-    seed = np.int64(P[P_SEED])
-    tick = np.int64(P[P_TICK])
-    raining = P[P_RAINING] > 0
+@njit(cache=True)
+def _fire_ignite_row(y, x0, x1, seed, tick, raining, spread, dryness, fire, ignite, terrain, plant, wood, flood):
     h, w = fire.shape
-    for y in prange(h):
-        for x in range(w):
-            ignite[y, x] = 0
-            if fire[y, x] != 0 or not _flammable(terrain[y, x]) or flood[y, x] > 0:
-                continue
-            fuel = min(1.0, plant[y, x] + wood[y, x])
-            if fuel < 0.05:
-                continue
-            k = 0
-            for d in range(1, 5):
-                ny, nx = y + DY4[d], x + DX4[d]
-                if 0 <= ny < h and 0 <= nx < w and fire[ny, nx] > 0:
-                    k += 1
-            if k > 0:
-                p = 1.0 - (1.0 - spread * dryness * fuel) ** k
-                if raining:
-                    p *= 0.2
-                if uniform(seed, tick, y * w + x, ST_FIRE) < p:
-                    ignite[y, x] = 1
+    for x in range(x0, x1 + 1):
+        ignite[y, x] = 0
+        if fire[y, x] != 0 or not _flammable(terrain[y, x]) or flood[y, x] > 0:
+            continue
+        fuel = min(1.0, plant[y, x] + wood[y, x])
+        if fuel < 0.05:
+            continue
+        k = 0
+        for d in range(1, 5):
+            ny, nx = y + DY4[d], x + DX4[d]
+            if 0 <= ny < h and 0 <= nx < w and fire[ny, nx] > 0:
+                k += 1
+        if k > 0:
+            p = 1.0 - (1.0 - spread * dryness * fuel) ** k
+            if raining:
+                p *= 0.2
+            if uniform(seed, tick, y * w + x, ST_FIRE) < p:
+                ignite[y, x] = 1
+
+
+@njit(cache=True)
+def _fire_update_row(y, x0, x1, seed, tick, raining, burn_ticks, fire, ignite, terrain, plant, wood, built, img,
+                     row_min, row_max):
+    w = fire.shape[1]
+    row_min[y] = w
+    row_max[y] = -1
+    for x in range(x0, x1 + 1):
+        f = fire[y, x]
+        burning = f > 0
+        if f > 0:
+            plant[y, x] = 0.0
+            wood[y, x] = max(0.0, wood[y, x] - 0.03)
+            built[y, x] = 0
+            f -= 1
+            if raining and uniform(seed, tick, y * w + x, ST_FIRE_OUT) < 0.08:
+                f = 0
+            fire[y, x] = -burn_ticks * 40 if f == 0 else f
+        if ignite[y, x] == 1:
+            fire[y, x] = burn_ticks
+        if burning or ignite[y, x] == 1:
+            img[y, x, 6] = _u8(plant[y, x] * 255.0)
+            img[y, x, 5] = 255 if terrain[y, x] == CAVE else min(255, 80 * built[y, x])
+            img_fire(img, fire, y, x)
+        if fire[y, x] > 0:
+            row_min[y] = min(row_min[y], x)
+            row_max[y] = max(row_max[y], x)
+
+
+@njit(cache=True)
+def _fire_box(box, y0, y1, row_min, row_max, h, w):
     n = 0
-    for y in prange(h):
-        row = 0
-        for x in range(w):
-            f = fire[y, x]
-            if f > 0:
-                plant[y, x] = 0.0
-                wood[y, x] = max(0.0, wood[y, x] - 0.03)
-                built[y, x] = 0
-                f -= 1
-                if raining and uniform(seed, tick, y * w + x, ST_FIRE_OUT) < 0.08:
-                    f = 0
-                fire[y, x] = -burn_ticks * 40 if f == 0 else f
-            if ignite[y, x] == 1:
-                fire[y, x] = burn_ticks
-            if fire[y, x] > 0:
-                row += 1
-        n += row
-    return n
+    ny0, ny1, nx0, nx1 = h, -1, w, -1
+    for y in range(y0, y1 + 1):
+        if row_max[y] >= 0:
+            n += 1
+            ny0, ny1 = min(ny0, y), max(ny1, y)
+            nx0, nx1 = min(nx0, row_min[y]), max(nx1, row_max[y])
+    box[0], box[1], box[2], box[3] = ny0 - 1, ny1 + 1, nx0 - 1, nx1 + 1
+    return n     # number of rows with fire (0 = extinguished)
+
+
+@njit(cache=True, parallel=True)
+def fire_step(P, spread, burn_ticks, dryness, fire, ignite, terrain, plant, wood, built, flood, img, box,
+              row_min, row_max):
+    """Advance burning cells inside box = [y0, y1, x0, x1] (burning cells' bounding box grown by one
+    cell: ignition only spreads to 4-neighbours). Updates box in place; returns rows still burning."""
+    seed, tick, raining = np.int64(P[P_SEED]), np.int64(P[P_TICK]), P[P_RAINING] > 0
+    h, w = fire.shape
+    y0, y1, x0, x1 = max(0, box[0]), min(h - 1, box[1]), max(0, box[2]), min(w - 1, box[3])
+    for y in prange(y0, y1 + 1):
+        _fire_ignite_row(y, x0, x1, seed, tick, raining, spread, dryness, fire, ignite, terrain, plant, wood, flood)
+    for y in prange(y0, y1 + 1):
+        _fire_update_row(y, x0, x1, seed, tick, raining, burn_ticks, fire, ignite, terrain, plant, wood, built,
+                         img, row_min, row_max)
+    return _fire_box(box, y0, y1, row_min, row_max, h, w)
+
+
+@njit(cache=True)
+def fire_step_seq(P, spread, burn_ticks, dryness, fire, ignite, terrain, plant, wood, built, flood, img, box,
+                  row_min, row_max):
+    """Sequential twin of fire_step (identical output; cheaper for small fires)."""
+    seed, tick, raining = np.int64(P[P_SEED]), np.int64(P[P_TICK]), P[P_RAINING] > 0
+    h, w = fire.shape
+    y0, y1, x0, x1 = max(0, box[0]), min(h - 1, box[1]), max(0, box[2]), min(w - 1, box[3])
+    for y in range(y0, y1 + 1):
+        _fire_ignite_row(y, x0, x1, seed, tick, raining, spread, dryness, fire, ignite, terrain, plant, wood, flood)
+    for y in range(y0, y1 + 1):
+        _fire_update_row(y, x0, x1, seed, tick, raining, burn_ticks, fire, ignite, terrain, plant, wood, built,
+                         img, row_min, row_max)
+    return _fire_box(box, y0, y1, row_min, row_max, h, w)
 
 
 # =====================================================================================
@@ -924,11 +1127,52 @@ def respawn_step(P, next_uid, n_genes, lifespan_lo, lifespan_hi, slots, A, I, S,
 # observations
 # =====================================================================================
 @njit(cache=True, parallel=True)
-def build_obs(P, R, r_eff, OFF, ODIST, RAY, RAYLEN, maturity, n_actions, social_on, rep_on, comms_on,
-              hear_r, strike_idx, A, I, G, HIST, occ, terrain, fresh_now, flood, plant, tree_at, tree_fruit,
-              fruit_max, food_item, fidx, FI, FF, fire, snow, built, grid_out, self_out, nb_out, heard_out):
-    N = A.shape[0]
+def build_vismask(terrain, OFF, PARENT, vismask):
+    """Static line of sight: bit o of vismask[y, x] (two uint64 words) is set when patch offset o is
+    visible from (y, x). Visibility propagates outward along each offset's Bresenham parent (the last
+    cell before it on the line): hidden if any ancestor is a mountain or two ancestors are forest.
+    Terrain never changes during a run, so this is computed once per world."""
     h, w = terrain.shape
+    n_off = OFF.shape[0]
+    for y in prange(h):
+        st = np.empty(n_off, np.int64)
+        for x in range(w):
+            m0 = np.uint64(0)
+            m1 = np.uint64(0)
+            for o in range(n_off):
+                cy, cx = y + OFF[o, 0], x + OFF[o, 1]
+                if cy < 0 or cx < 0 or cy >= h or cx >= w:
+                    st[o] = -1
+                    continue
+                p = PARENT[o]
+                v = 0
+                if p >= 0:
+                    v = st[p]
+                    if v >= 0:
+                        pt = terrain[y + OFF[p, 0], x + OFF[p, 1]]
+                        if pt == MOUNTAIN:
+                            v = -1
+                        elif pt == FOREST:
+                            v += 1
+                            if v >= 2:
+                                v = -1
+                st[o] = v
+                if v >= 0:
+                    if o < 64:
+                        m0 |= np.uint64(1) << np.uint64(o)
+                    else:
+                        m1 |= np.uint64(1) << np.uint64(o - 64)
+            vismask[y, x, 0] = m0
+            vismask[y, x, 1] = m1
+
+
+@njit(cache=True, parallel=True)
+def build_obs(P, R, r_eff, OFF, ODIST, maturity, social_on, rep_on, comms_on, hear_r, strike_idx,
+              A, I, G, HIST, occ, img, img64, vismask, grid_out, grid64, self_out, nb_out, heard_out):
+    """Egocentric observations, channel-last: grid_out[i, gy, gx, c] = img cell if visible
+    (vismask, distance <= r_eff), plus observer-specific channels (visible, agent/kin, signal)."""
+    N = A.shape[0]
+    h, w = occ.shape
     K = nb_out.shape[1]
     n_genes = G.shape[1]
     hist_len = HIST.shape[1]
@@ -941,6 +1185,8 @@ def build_obs(P, R, r_eff, OFF, ODIST, RAY, RAYLEN, maturity, n_actions, social_
         if I[i, I_ALIVE] == 0:
             continue
         x, y = I[i, I_X], I[i, I_Y]
+        m0 = vismask[y, x, 0]
+        m1 = vismask[y, x, 1]
         kn = 0
         for o in range(OFF.shape[0]):
             if ODIST[o] > r_eff + 0.5:
@@ -949,60 +1195,26 @@ def build_obs(P, R, r_eff, OFF, ODIST, RAY, RAYLEN, maturity, n_actions, social_
             cy, cx = y + dy, x + dx
             gy, gx = dy + R, dx + R
             if cy < 0 or cx < 0 or cy >= h or cx >= w:
-                grid_out[i, 1, gy, gx] = 255
+                grid_out[i, gy, gx, 1] = 255
                 continue
-            blocked = False
-            nf = 0
-            for s in range(RAYLEN[o]):
-                t = terrain[y + RAY[o, s, 0], x + RAY[o, s, 1]]
-                if t == MOUNTAIN:
-                    blocked = True
-                    break
-                if t == FOREST:
-                    nf += 1
-                    if nf >= 2:
-                        blocked = True
-                        break
-            if blocked:
+            if o < 64:
+                bit = (m0 >> np.uint64(o)) & np.uint64(1)
+            else:
+                bit = (m1 >> np.uint64(o - 64)) & np.uint64(1)
+            if bit == 0:
                 continue
-            t = terrain[cy, cx]
-            grid_out[i, 0, gy, gx] = 255
-            if t == DEEP_WATER or t == MOUNTAIN:
-                grid_out[i, 1, gy, gx] = 255
-            if fresh_now[cy, cx] or flood[cy, cx] > 0:
-                grid_out[i, 2, gy, gx] = 255
-            elif t == DEEP_WATER or t == SHALLOW:
-                grid_out[i, 2, gy, gx] = 100
-            if t == FOREST:
-                grid_out[i, 3, gy, gx] = 255
-            if t == ROCK or t == MOUNTAIN:
-                grid_out[i, 4, gy, gx] = 255
-            sh = 255 if t == CAVE else min(255, 80 * built[cy, cx])
-            grid_out[i, 5, gy, gx] = sh
-            grid_out[i, 6, gy, gx] = np.uint8(min(1.0, plant[cy, cx]) * 255)
-            tr = tree_at[cy, cx]
-            if tr >= 0:
-                grid_out[i, 7, gy, gx] = np.uint8(40 + 215 * min(1.0, tree_fruit[tr] / fruit_max))
-            grid_out[i, 8, gy, gx] = np.uint8(min(1.0, food_item[cy, cx] / 2.0) * 255)
-            j = fidx[cy, cx]
-            if j >= 0:
-                sp = FI[j, F_SPECIES]
-                grid_out[i, 9 + sp, gy, gx] = np.uint8(60 + 195 * max(0.0, min(1.0, FF[j, F_HEALTH])))
-            f = fire[cy, cx]
-            if f > 0:
-                grid_out[i, 13, gy, gx] = 255
-            elif f < 0:
-                grid_out[i, 13, gy, gx] = 60
-            grid_out[i, 15, gy, gx] = np.uint8(snow[cy, cx] * 255)
+            grid64[i, gy, gx, 0] = img64[cy, cx, 0]     # 16 channels = two 64-bit words
+            grid64[i, gy, gx, 1] = img64[cy, cx, 1]
+            grid_out[i, gy, gx, 0] = 255
             v = occ[cy, cx]
             if v >= 0 and v != i:
                 diff = 0.0
                 for g in range(n_genes):
                     diff += abs(G[i, g] - G[v, g])
                 kin = 1.0 - diff / (2.0 * n_genes)
-                grid_out[i, 12, gy, gx] = np.uint8(100 + 155 * kin)
+                grid_out[i, gy, gx, 12] = np.uint8(100 + 155 * kin)
                 if comms_on and I[v, I_SIGNAL] >= 0:
-                    grid_out[i, 14, gy, gx] = 255
+                    grid_out[i, gy, gx, 14] = 255
                 if kn < K:
                     nb_out[i, kn, 0] = 1.0
                     nb_out[i, kn, 1] = dx / R
@@ -1052,9 +1264,28 @@ def build_obs(P, R, r_eff, OFF, ODIST, RAY, RAYLEN, maturity, n_actions, social_
                     if v >= 0 and I[v, I_SIGNAL] >= 0:
                         d = np.sqrt(dx * dx + dy * dy)
                         if d <= hear_r:
-                            s = I[v, I_SIGNAL]
-                            if s < n_sym:
-                                heard_out[i, s] += 1.0 / (1.0 + d)
+                            sg = I[v, I_SIGNAL]
+                            if sg < n_sym:
+                                heard_out[i, sg] += 1.0 / (1.0 + d)
+
+
+@njit(cache=True)
+def alive_permutation(alive_col, seed, tick, stream):
+    """Hash-shuffled indices of rows whose alive flag is set (deterministic)."""
+    n = 0
+    for i in range(alive_col.shape[0]):
+        if alive_col[i] == 1:
+            n += 1
+    p = np.empty(n, np.int64)
+    k = 0
+    for i in range(alive_col.shape[0]):
+        if alive_col[i] == 1:
+            p[k] = i
+            k += 1
+    for i in range(n - 1, 0, -1):
+        j = randint(seed, tick, i, stream, i + 1)
+        p[i], p[j] = p[j], p[i]
+    return p
 
 
 @njit(cache=True)
@@ -1068,3 +1299,148 @@ def homeostatic_drive(A, setpoint, out):
                 s += d * d
         out[i] = np.sqrt(s)
     return out
+
+
+@njit(cache=True)
+def begin_tick(I):
+    for i in range(I.shape[0]):
+        I[i, I_DIED_NOW] = 0
+        I[i, I_BORN_NOW] = 0
+        I[i, I_REPRODUCED_NOW] = 0
+
+
+@njit(cache=True)
+def tally_events(EV, n, ev_counts, deaths_by_cause):
+    for k in range(n):
+        t = np.int64(EV[k, 1])
+        ev_counts[t] += 1
+        if t == EV_DEATH:
+            deaths_by_cause[np.int64(EV[k, 6])] += 1
+
+
+
+@njit(cache=True)
+def tick_rewards(prev_drive, setpoint, A, I, death_penalty, rewards, died):
+    """r = D(before) - D(after) + death penalty; also returns the new drive in prev_drive's place."""
+    for i in range(A.shape[0]):
+        s = 0.0
+        for k in range(4):
+            d = setpoint[k] - A[i, k]
+            if d > 0:
+                s += d * d
+        dr = np.sqrt(s)
+        died[i] = I[i, I_DIED_NOW] == 1
+        rewards[i] = prev_drive[i] - dr
+        if died[i]:
+            rewards[i] += death_penalty
+
+
+@njit(cache=True)
+def tick_masks(I, A, setpoint, died, rewards, born, alive, prev_drive):
+    """After births/respawns: zero rewards of slots that held no agent this tick (a slot that died
+    AND was refilled keeps the dead agent's transition), and store the drive for the next tick."""
+    for i in range(I.shape[0]):
+        born[i] = I[i, I_BORN_NOW] == 1
+        alive[i] = I[i, I_ALIVE] == 1
+        if not ((alive[i] and not born[i]) or died[i]):
+            rewards[i] = 0.0
+        s = 0.0
+        for k in range(4):
+            d = setpoint[k] - A[i, k]
+            if d > 0:
+                s += d * d
+        prev_drive[i] = np.sqrt(s)
+
+
+@njit(cache=True)
+def alive_rotation(alive_col, seed, tick, stream):
+    """Indices of alive rows in index order starting from a hash-chosen offset (cheaper than a full
+    shuffle; used for fauna, where order only breaks ties between rare conflicting moves)."""
+    M = alive_col.shape[0]
+    n = 0
+    for i in range(M):
+        if alive_col[i] == 1:
+            n += 1
+    p = np.empty(n, np.int64)
+    start = randint(seed, tick, 0, stream, M)
+    k = 0
+    for q in range(M):
+        i = (start + q) % M
+        if alive_col[i] == 1:
+            p[k] = i
+            k += 1
+    return p
+
+
+@njit(cache=True)
+def world_tick(P, actions, A, I, S, G, HIST, occ, terrain, elev, fresh_now, flood, plant, fertility, tree_x,
+               tree_y, tree_season, tree_fruit, tree_state, tree_at, food_item, item_owner, wood, built, fire,
+               ignite, snow, fidx, FF, FI, FP, fcount, fstat, tgrid, fprop, EV, n_ev, img, fire_box, row_min,
+               row_max, prev_drive, setpoint, rewards, died, born, alive,
+               par_prey, do_veg, veg_dt, growth_mult, growth_rate, seed_floor, wood_regrow, meat_decay,
+               season, fruit_ok, fruit_rate, fruit_rot, fruit_max, n_fire, par_fire, fire_spread, burn_ticks,
+               dryness, death_penalty,
+               spawn_mode, next_uid, n_genes, lifespan_lo, lifespan_hi, spawn_ok, maturity, rp_energy, rp_hyd,
+               rp_cost, rp_cooldown, mut_std, repro_bonus, ev_counts, deaths_by_cause,
+               compute_obs, R, r_eff, OFF, ODIST, social_on, rep_on, comms_on, hear_r, strike_idx, img64, vismask,
+               grid_out, grid64, self_out, nb_out, heard_out):
+    """One world tick in a single dispatch: agents -> fauna -> vegetation/trees -> fire -> rewards ->
+    births/respawns (spawn_mode 1 = respawn dead slots, 2 = reproduction) -> reward masks -> event
+    tally -> observations. Returns (fire row count, next uid, number of events)."""
+    seed = np.int64(P[P_SEED])
+    tick = np.int64(P[P_TICK])
+    begin_tick(I)
+    order = alive_permutation(I[:, I_ALIVE], seed, tick, ST_ORDER)
+    agents_step(P, actions, order, A, I, S, G, HIST, occ, terrain, elev, fresh_now, flood, plant, tree_at,
+                tree_fruit, food_item, item_owner, wood, built, fire, snow, fidx, FF, FI, fcount, EV, n_ev, img,
+                fstat)
+    forder = alive_rotation(FI[:, F_ALIVE], seed, tick, ST_ORDER + 50)
+    build_threat_grid(I, FI, tgrid)
+    if par_prey:
+        prey_proposals(P, FF, FI, fidx, occ, terrain, plant, built, fire, tgrid, fprop)
+    else:
+        prey_proposals_seq(P, FF, FI, fidx, occ, terrain, plant, built, fire, tgrid, fprop)
+    fauna_step(P, forder, FF, FI, fidx, fcount, occ, terrain, plant, food_item, item_owner, built, fire, A, I, S,
+               EV, n_ev, fprop, img, FP, fstat, wood)
+    if do_veg:
+        vegetation_step(P, veg_dt, growth_mult, growth_rate, seed_floor, wood_regrow, meat_decay, plant,
+                        fertility, terrain, elev, fire, flood, snow, wood, food_item, item_owner, built, img,
+                        fresh_now)
+    trees_step(tree_x, tree_y, tree_season, tree_fruit, tree_state, tree_at, fire, season, fruit_ok, fruit_rate,
+               fruit_rot, fruit_max, img)
+    if n_fire > 0:
+        if par_fire:
+            n_fire = fire_step(P, fire_spread, burn_ticks, dryness, fire, ignite, terrain, plant, wood, built,
+                               flood, img, fire_box, row_min, row_max)
+        else:
+            n_fire = fire_step_seq(P, fire_spread, burn_ticks, dryness, fire, ignite, terrain, plant, wood,
+                                   built, flood, img, fire_box, row_min, row_max)
+    tick_rewards(prev_drive, setpoint, A, I, death_penalty, rewards, died)
+    if spawn_mode == 2:
+        border = alive_permutation(I[:, I_ALIVE], seed, tick, ST_ORDER + 99)
+        next_uid = births_step(P, next_uid, maturity, rp_energy, rp_hyd, rp_cost, rp_cooldown, mut_std,
+                               lifespan_lo, lifespan_hi, border, A, I, S, G, HIST, occ, terrain, fidx, EV, n_ev)
+        for i in range(I.shape[0]):
+            if I[i, I_REPRODUCED_NOW] == 1:
+                rewards[i] += repro_bonus
+    elif spawn_mode == 1:
+        nd = 0
+        for i in range(I.shape[0]):
+            if died[i]:
+                nd += 1
+        if nd > 0:
+            slots = np.empty(nd, np.int64)
+            k = 0
+            for i in range(I.shape[0]):
+                if died[i]:
+                    slots[k] = i
+                    k += 1
+            next_uid = respawn_step(P, next_uid, n_genes, lifespan_lo, lifespan_hi, slots, A, I, S, G, HIST, occ,
+                                    terrain, fidx, spawn_ok, EV, n_ev)
+    tick_masks(I, A, setpoint, died, rewards, born, alive, prev_drive)
+    n = min(n_ev[0], EV.shape[0])
+    tally_events(EV, n, ev_counts, deaths_by_cause)
+    if compute_obs:
+        build_obs(P, R, r_eff, OFF, ODIST, maturity, social_on, rep_on, comms_on, hear_r, strike_idx, A, I, G,
+                  HIST, occ, img, img64, vismask, grid_out, grid64, self_out, nb_out, heard_out)
+    return n_fire, next_uid, n_ev[0]

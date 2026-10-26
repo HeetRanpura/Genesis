@@ -1,4 +1,5 @@
-"""Non-learning baselines (HARD RULE 5). All act on the same observations learners receive.
+"""Non-learning baselines (HARD RULE 5). All act on the same observations learners receive
+(grid is channel-last: grid[agent, y, x, channel]).
 
 - RandomPolicy:     uniform over the action space.
 - GreedyForager:    attends to its lowest of {energy, hydration}; eats/drinks if possible,
@@ -38,11 +39,11 @@ class RandomPolicy:
 
 @njit(cache=True, inline="always")
 def _free(grid, gy, gx):
-    S = grid.shape[1]
+    S = grid.shape[0]
     if gy < 0 or gx < 0 or gy >= S or gx >= S:
         return False
-    return (grid[C_BLOCK, gy, gx] == 0 and grid[C_AGENT, gy, gx] == 0 and grid[C_SMALL, gy, gx] == 0
-            and grid[C_LARGE, gy, gx] == 0 and grid[C_PRED, gy, gx] == 0)
+    return (grid[gy, gx, C_BLOCK] == 0 and grid[gy, gx, C_AGENT] == 0 and grid[gy, gx, C_SMALL] == 0
+            and grid[gy, gx, C_LARGE] == 0 and grid[gy, gx, C_PRED] == 0)
 
 
 @njit(cache=True)
@@ -67,7 +68,7 @@ def _nearest(grid, R, ch, thr):
     best, by, bx = 1 << 30, 0, 0
     for gy in range(S):
         for gx in range(S):
-            if grid[C_VIS, gy, gx] == 0 or grid[ch, gy, gx] < thr:
+            if grid[gy, gx, C_VIS] == 0 or grid[gy, gx, ch] < thr:
                 continue
             d = abs(gy - R) + abs(gx - R)
             if d < best:
@@ -80,7 +81,7 @@ def _adjacent(grid, R, ch, thr):
     for d in range(5):
         dy = 0 if d == 0 else MDY[d - 1]
         dx = 0 if d == 0 else MDX[d - 1]
-        if grid[ch, R + dy, R + dx] >= thr:
+        if grid[R + dy, R + dx, ch] >= thr:
             return True
     return False
 
@@ -101,7 +102,7 @@ def _explore(grid, R, heading, u):
 @njit(cache=True)
 def _food_here(grid, R):
     return (_adjacent(grid, R, C_FOOD, 10) or _adjacent(grid, R, C_FRUIT, 80)
-            or grid[C_PLANT, R, R] >= 40)
+            or grid[R, R, C_PLANT] >= 40)
 
 
 @njit(cache=True)
@@ -118,7 +119,7 @@ def _seek_food(grid, R, u):
 
 @njit(cache=True, parallel=True)
 def greedy_act(grid, selff, alive, U, heading, out):
-    R = grid.shape[2] // 2
+    R = grid.shape[1] // 2
     for i in prange(grid.shape[0]):
         out[i] = NOOP
         if not alive[i]:
@@ -146,7 +147,7 @@ def greedy_act(grid, selff, alive, U, heading, out):
 @njit(cache=True, parallel=True)
 def heuristic_act(grid, selff, alive, U, heading, mode, out):
     """mode: per-agent hysteresis state (0 none, 1 drinking, 2 eating)."""
-    R = grid.shape[2] // 2
+    R = grid.shape[1] // 2
     for i in prange(grid.shape[0]):
         out[i] = NOOP
         if not alive[i]:
@@ -206,7 +207,7 @@ def heuristic_act(grid, selff, alive, U, heading, mode, out):
                         a = _step_to(g, R, dy, dx, U[i, 0], False)
         if a < 0 and mode[i] == 0:
             # sated: stockpile ground food, rest at night, otherwise drift toward water + food
-            if g[C_FOOD, R, R] >= 10 and selff[i, 5] < 0.5:
+            if g[R, R, C_FOOD] >= 10 and selff[i, 5] < 0.5:
                 a = PICKUP
             elif light < 0.5 or health < 0.7:
                 a = REST

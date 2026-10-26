@@ -1,0 +1,25 @@
+seed 0: small_prey: mean 108 [10-546] cap 0% floor 15% immig 3% deaths {'starved': 0.315, 'old_age': 0.0, 'fire': 0.075, 'eaten': 0.029, 'hunted': 0.582} | large_prey: mean 82 [7-185] cap 0% floor 0% immig 0% deaths {'starved': 0.695, 'old_age': 0.0, 'fire': 0.172, 'eaten': 0.133, 'hunted': 0.0} | predators: mean 2 [2-4] cap 0% floor 79% immig 69% deaths {'starved': 0.929, 'old_age': 0.0, 'fire': 0.071, 'eaten': 0.0, 'hunted': 0.0}
+seed 1: small_prey: mean 286 [10-870] cap 0% floor 2% immig 0% deaths {'starved': 0.302, 'old_age': 0.0, 'fire': 0.0, 'eaten': 0.387, 'hunted': 0.311} | large_prey: mean 102 [4-346] cap 0% floor 1% immig 0% deaths {'starved': 0.357, 'old_age': 0.0, 'fire': 0.012, 'eaten': 0.631, 'hunted': 0.0} | predators: mean 34 [18-50] cap 0% floor 0% immig 0% deaths {'starved': 1.0, 'old_age': 0.0, 'fire': 0.0, 'eaten': 0.0, 'hunted': 0.0}
+seed 2: small_prey: mean 101 [10-481] cap 0% floor 10% immig 6% deaths {'starved': 0.221, 'old_age': 0.0, 'fire': 0.122, 'eaten': 0.063, 'hunted': 0.594} | large_prey: mean 21 [7-51] cap 0% floor 0% immig 0% deaths {'starved': 0.671, 'old_age': 0.0, 'fire': 0.25, 'eaten': 0.079, 'hunted': 0.0} | predators: mean 6 [2-21] cap 0% floor 23% immig 10% deaths {'starved': 0.842, 'old_age': 0.0, 'fire': 0.158, 'eaten': 0.0, 'hunted': 0.0}
+seed 3: small_prey: mean 556 [10-1693] cap 0% floor 2% immig 0% deaths {'starved': 0.584, 'old_age': 0.0, 'fire': 0.0, 'eaten': 0.039, 'hunted': 0.378} | large_prey: mean 454 [4-985] cap 0% floor 1% immig 0% deaths {'starved': 0.834, 'old_age': 0.0, 'fire': 0.049, 'eaten': 0.116, 'hunted': 0.0} | predators: mean 4 [2-17] cap 0% floor 53% immig 21% deaths {'starved': 0.952, 'old_age': 0.0, 'fire': 0.048, 'eaten': 0.0, 'hunted': 0.0}
+seed 4: small_prey: mean 363 [10-1271] cap 0% floor 6% immig 1% deaths {'starved': 0.414, 'old_age': 0.0, 'fire': 0.007, 'eaten': 0.067, 'hunted': 0.511} | large_prey: mean 262 [4-515] cap 0% floor 1% immig 0% deaths {'starved': 0.56, 'old_age': 0.0, 'fire': 0.01, 'eaten': 0.429, 'hunted': 0.0} | predators: mean 11 [2-32] cap 0% floor 1% immig 4% deaths {'starved': 1.0, 'old_age': 0.0, 'fire': 0.0, 'eaten': 0.0, 'hunted': 0.0}
+{
+ "small_prey": {
+  "mean": 282.5371527777778,
+  "frac_time_at_cap": 0.0,
+  "frac_time_at_floor": 0.07187500000000001,
+  "immigrant_share_of_recruits": 0.020802315475343256
+ },
+ "large_prey": {
+  "mean": 184.23298611111113,
+  "frac_time_at_cap": 0.0,
+  "frac_time_at_floor": 0.005902777777777778,
+  "immigrant_share_of_recruits": 0.00012143290831815422
+ },
+ "predators": {
+  "mean": 11.652777777777779,
+  "frac_time_at_cap": 0.0,
+  "frac_time_at_floor": 0.31354166666666666,
+  "immigrant_share_of_recruits": 0.20925518925518927
+ }
+}

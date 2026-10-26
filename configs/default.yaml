@@ -18,7 +18,8 @@ world:
 time:
   ticks_per_day: 120
   days_per_season: 8          # year = 4 seasons = 3,840 ticks
-  veg_every: 4                # slow cell dynamics (plants, snow, decay) advance every k ticks by k*dt
+  veg_every: 8                # slow cell dynamics (plants, snow, decay) advance every k ticks by k*dt
+  spinup_years: 1.0           # ecology runs this long without agents before tick 'zero' of a run
 
 climate:
   base_temp: 14.0             # deg C at sea level, annual mean
@@ -52,7 +53,7 @@ disturbances:
 
 resources:
   plant_growth_rate: 0.0045                 # logistic rate per tick at season multiplier 1
-  plant_seed_floor: 0.03
+  plant_seed_floor: 0.10                    # grazing-tolerant regrowth (roots): minimum growth base
   season_growth: [1.2, 1.0, 0.55, 0.05]     # spring, summer, autumn, winter
   plant_bite: 0.25                          # biomass removed per EAT
   plant_energy: 0.12                        # energy per unit biomass
@@ -68,11 +69,22 @@ resources:
   rain_drink: 0.006                         # hydration from DRINK anywhere while it rains
 
 fauna:
-  small_prey:   {initial: 900, min: 200, max: 1600, energy: 0.30}
-  large_prey:   {initial: 120, min: 30,  max: 300,  energy: 1.8, min_attackers: 2, attack_window: 6}
-  predators:    {initial: 20,  min: 6,   max: 35,   damage: 0.08, attack_prob: 0.4}
+  # metabolism: energy/tick; bite: plant biomass per grazing tick; conversion: energy per biomass;
+  # satiation: graze only below this energy; repro_*: birth when energy > threshold, with prob rate/tick
+  # (parent energy is split with the offspring). min/max are safety rails (immigration floor, cap) and
+  # should rarely bind -- see experiments/fauna_diagnostics.py.
+  small_prey: {initial: 400, min: 10, max: 5000, energy: 0.30, metabolism: 0.0025, bite: 0.04, conversion: 0.8,
+               satiation: 0.85, repro_threshold: 0.8, repro_rate: 0.004, max_age_years: 2.0, breed_forage: 0.0}
+  large_prey: {initial: 48, min: 4, max: 3000, energy: 1.8, min_attackers: 2, attack_window: 6,
+               metabolism: 0.0015, bite: 0.08, conversion: 0.6, satiation: 0.85, repro_threshold: 0.8,
+               repro_rate: 0.0015, max_age_years: 5.2, breed_forage: 0.0, browse_conversion: 0.6}
+  predators:  {initial: 12, min: 2, max: 150, damage: 0.08, attack_prob: 0.4, metabolism: 0.0008,
+               satiation: 1.0, repro_threshold: 0.8, repro_rate: 0.0012, max_age_years: 5.2,
+               gain_small: 0.6, gain_large: 1.0, gain_agent: 0.6}
+  cold_metabolism: 0.2        # metabolism multiplier for all fauna when sea-level temp < 5 C (torpor)
+  breeding_seasons: [0, 1, 2]   # seasons in which fauna can give birth (0 spring .. 3 winter)
   flee_radius: 4
-  predator_sense: 6
+  predator_sense: 8
 
 agents:
   n_initial: 256

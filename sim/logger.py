@@ -22,6 +22,14 @@ def git_commit() -> str:
         return "uncommitted"
 
 
+def _layer() -> str:
+    import numba
+    try:
+        return numba.threading_layer()
+    except ValueError:      # no parallel region has run yet
+        return numba.config.THREADING_LAYER
+
+
 class RunLogger:
     def __init__(self, run_dir: str | Path, env, meta: dict | None = None):
         self.dir = Path(run_dir)
@@ -31,7 +39,7 @@ class RunLogger:
         import numba
         manifest = dict(seed=env.seed, started=dt.datetime.now().isoformat(timespec="seconds"),
                         git_commit=git_commit(), python=platform.python_version(), numpy=np.__version__,
-                        numba=numba.__version__, machine=platform.platform(), world_hash=self._world_hash(),
+                        numba=numba.__version__, threading_layer=_layer(), machine=platform.platform(), world_hash=self._world_hash(),
                         action_names=env.action_names, event_names=EVENT_NAMES, death_names=DEATH_NAMES,
                         **(meta or {}))
         (self.dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
