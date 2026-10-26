@@ -48,3 +48,27 @@ Baselines, 5 seeds x 2.0 years, 256 agents, fixed population (respawn).
 | heuristic | 1.00 [0.70, 1.41] | 0.485 [0.329, 0.633] |
 
 Deaths by cause (summed over seeds): **random** {'starvation': 5128, 'thirst': 3359, 'cold': 910, 'fire': 271, 'predator': 142}; **greedy** {'starvation': 1699, 'thirst': 4685, 'cold': 1145, 'fire': 353, 'predator': 608}; **heuristic** {'starvation': 347, 'thirst': 2460, 'cold': 442, 'fire': 276, 'predator': 289, 'old_age': 17}
+
+## 2026-10-26 — Stage 1.1: baselines under food-limited fauna (written by hand)
+
+Engine changes: fauna food-limited (caps never bind), 1-year ecological spin-up, faster observations.
+Rerun of `experiments/run_baselines.py` (5 seeds × 2 years, 256 agents):
+
+| policy | deaths / agent-year (95% CI) | KM survival at 1 yr |
+|---|---|---|
+| random | 2.55 [2.36, 2.79] | 0.134 |
+| greedy | 2.21 [1.95, 2.51] | 0.163 |
+| heuristic | 1.00 [0.70, 1.41] | 0.485 |
+
+- Heuristic still far ahead of random (Hedges' g = −3.8 on per-seed mortality); greedy is now slightly
+  better than random (g = −1.0), no longer worse.
+- Heuristic mortality rose (0.87 → 1.00) and its thirst deaths tripled. Ablation (3 seeds × 1.5 years,
+  one change reverted at a time) pins it on the fauna retune, not spin-up/vegetation: with the old
+  fauna, thirst deaths 383 vs 1,160 now. Mechanism, measured on seed 0: small-prey kills by agents fell
+  1,871 → 551 and meat meals 3,629 → 980; agents switched to plants (31,674 vs 17,382 bites), spent 38%
+  vs 22% of ticks in eat-mode, and the heuristic's "food first when energy ≤ hydration" rule leaves them
+  away from water. Before, capped prey plus an immigration floor of 200 were effectively free food.
+- Agents are the dominant predator of small prey: 256 heuristic agents hunted small prey down to 27
+  animals by the end of year 1 (seed 0); agents cause ~half of all small-prey deaths. An overexploitation
+  dynamic exists in the world before any learning — worth tracking once learners arrive (commons tests).
+- Deaths cluster in spring (post-winter lean season) and winter for heuristic agents in both years.

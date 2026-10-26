@@ -108,5 +108,5 @@ how to launch the viewer, three most promising next experiments.
 ## Status
 | Stage | Status |
 |---|---|
-| 1 World engine | done — awaiting review ([report](reports/stage1/STAGE1_REPORT.md)) |
+| 1 World engine | done, plus Stage 1.1 tuning (food-limited fauna, ≥100k steps/min with obs at 1,000 agents) — awaiting review ([report](reports/stage1/STAGE1_REPORT.md)) |
 | 2–7 | not started |
