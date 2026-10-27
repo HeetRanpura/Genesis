@@ -1,0 +1,176 @@
+{
+  "args": {
+    "seeds": 2,
+    "years": 0.5,
+    "agents": 256,
+    "config": null,
+    "out": "runs/paper_baselines_short"
+  },
+  "per_run": [
+    {
+      "policy": "random",
+      "seed": 0,
+      "ticks": 1920,
+      "wall_s": 1.2,
+      "deaths_per_agent_year": 2.599801160102714,
+      "km_survival_1yr": 0.08859111325072695,
+      "median_lifetime_days": 6.891666666666667,
+      "deaths_by_cause": {
+        "starvation": 160,
+        "thirst": 164,
+        "fire": 4,
+        "predator": 5
+      },
+      "mean_needs": {
+        "energy": 0.4627021551132202,
+        "hydration": 0.550764799118042,
+        "health": 0.8589293956756592,
+        "warmth": 0.9743292331695557
+      }
+    },
+    {
+      "policy": "greedy",
+      "seed": 0,
+      "ticks": 1920,
+      "wall_s": 1.5,
+      "deaths_per_agent_year": 1.4135419696116136,
+      "km_survival_1yr": 0.41852801371772597,
+      "median_lifetime_days": 10.283333333333333,
+      "deaths_by_cause": {
+        "starvation": 54,
+        "thirst": 114,
+        "fire": 11,
+        "predator": 2
+      },
+      "mean_needs": {
+        "energy": 0.5272142887115479,
+        "hydration": 0.6277813911437988,
+        "health": 0.9074998497962952,
+        "warmth": 0.9673070907592773
+      }
+    },
+    {
+      "policy": "heuristic",
+      "seed": 0,
+      "ticks": 1920,
+      "wall_s": 1.3,
+      "deaths_per_agent_year": 1.0934385550990522,
+      "km_survival_1yr": 0.6295601466286131,
+      "median_lifetime_days": 10.283333333333333,
+      "deaths_by_cause": {
+        "thirst": 135,
+        "fire": 5
+      },
+      "mean_needs": {
+        "energy": 0.7480847239494324,
+        "hydration": 0.7197403907775879,
+        "health": 0.9941250085830688,
+        "warmth": 0.9848952293395996
+      }
+    },
+    {
+      "policy": "random",
+      "seed": 1,
+      "ticks": 1920,
+      "wall_s": 1.1,
+      "deaths_per_agent_year": 2.1862545750305005,
+      "km_survival_1yr": 0.21784496217986535,
+      "median_lifetime_days": 7.1125,
+      "deaths_by_cause": {
+        "starvation": 94,
+        "thirst": 168,
+        "predator": 18
+      },
+      "mean_needs": {
+        "energy": 0.5587564706802368,
+        "hydration": 0.5064554214477539,
+        "health": 0.8578043580055237,
+        "warmth": 0.9790040254592896
+      }
+    },
+    {
+      "policy": "greedy",
+      "seed": 1,
+      "ticks": 1920,
+      "wall_s": 1.3,
+      "deaths_per_agent_year": 0.757662977480437,
+      "km_survival_1yr": 0.7170382124808465,
+      "median_lifetime_days": 11.583333333333334,
+      "deaths_by_cause": {
+        "starvation": 26,
+        "thirst": 49,
+        "fire": 2,
+        "predator": 20
+      },
+      "mean_needs": {
+        "energy": 0.7364491820335388,
+        "hydration": 0.7826104760169983,
+        "health": 0.9821013808250427,
+        "warmth": 0.9767583608627319
+      }
+    },
+    {
+      "policy": "heuristic",
+      "seed": 1,
+      "ticks": 1920,
+      "wall_s": 1.3,
+      "deaths_per_agent_year": 1.3432799394743051,
+      "km_survival_1yr": 0.5427640927360565,
+      "median_lifetime_days": 9.883333333333333,
+      "deaths_by_cause": {
+        "starvation": 2,
+        "thirst": 122,
+        "predator": 48
+      },
+      "mean_needs": {
+        "energy": 0.7674438953399658,
+        "hydration": 0.7491422891616821,
+        "health": 1.0,
+        "warmth": 0.9847947359085083
+      }
+    }
+  ],
+  "summary": {
+    "random": {
+      "deaths_per_agent_year": [
+        2.393027867566607,
+        2.1862545750305005,
+        2.599801160102714
+      ],
+      "km_survival_1yr": [
+        0.15321803771529616,
+        0.08859111325072695,
+        0.21784496217986535
+      ],
+      "n_seeds": 2
+    },
+    "greedy": {
+      "deaths_per_agent_year": [
+        1.0856024735460252,
+        0.757662977480437,
+        1.4135419696116136
+      ],
+      "km_survival_1yr": [
+        0.5677831130992863,
+        0.41852801371772597,
+        0.7170382124808465
+      ],
+      "n_seeds": 2,
+      "hedges_g_vs_random_deaths": -1.9270815276160684
+    },
+    "heuristic": {
+      "deaths_per_agent_year": [
+        1.2183592472866787,
+        1.0934385550990522,
+        1.3432799394743051
+      ],
+      "km_survival_1yr": [
+        0.5861621196823348,
+        0.5427640927360565,
+        0.6295601466286131
+      ],
+      "n_seeds": 2,
+      "hedges_g_vs_random_deaths": -2.778550445857649
+    }
+  }
+}

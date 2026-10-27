@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="760" viewBox="0 0 1060 760" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" role="img" aria-label="01_system_architecture">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#6f6e69"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="24.0" y="34.0" font-size="18" fill="#1b1b1a" text-anchor="start" font-weight="600">GENESIS system architecture</text>
+<text x="24.0" y="56.0" font-size="12.5" fill="#52514e" text-anchor="start">One seeded simulator, interchangeable policies, everything recorded; analysis never feeds back into reward.</text>
+<rect x="380" y="78" width="300" height="54" rx="9" fill="#f4f4f2" stroke="#8a8984" stroke-width="1.6"/>
+<text x="530.0" y="101.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Config + seed</text>
+<text x="530.0" y="119.5" font-size="11" fill="#52514e" text-anchor="middle">configs/default.yaml, deep-merged experiment YAML</text>
+<rect x="20" y="160" width="540" height="270" rx="12" fill="#eaf2fc" fill-opacity="0.35" stroke="#2a78d6" stroke-width="1.3" stroke-dasharray="7 5"/>
+<text x="34.0" y="182.0" font-size="13" fill="#1b1b1a" text-anchor="start" font-weight="600">Simulator</text>
+<text x="102.9" y="182.0" font-size="11" fill="#52514e" text-anchor="start">sim/ · Numba · CPU</text>
+<rect x="40" y="200" width="200" height="86" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="140.0" y="232.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">World generation</text>
+<text x="140.0" y="250.0" font-size="11" fill="#52514e" text-anchor="middle">terrain, lakes, rivers, biomes</text>
+<text x="140.0" y="265.0" font-size="11" fill="#52514e" text-anchor="middle">fauna seeding, 1-yr spin-up</text>
+<rect x="40" y="306" width="200" height="104" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="140.0" y="332.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Determinism</text>
+<text x="140.0" y="350.0" font-size="11" fill="#52514e" text-anchor="middle">counter hash RNG</text>
+<text x="140.0" y="365.0" font-size="11" fill="#52514e" text-anchor="middle">(seed, tick, index, stream)</text>
+<text x="140.0" y="380.0" font-size="11" fill="#52514e" text-anchor="middle">bit-identical runs</text>
+<text x="140.0" y="395.0" font-size="11" fill="#52514e" text-anchor="middle">exact replay</text>
+<rect x="270" y="200" width="270" height="210" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="405.0" y="256.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">GenesisEnv.step</text>
+<text x="405.0" y="274.5" font-size="11" fill="#52514e" text-anchor="middle">climate tick (Python)</text>
+<text x="405.0" y="289.5" font-size="11" fill="#52514e" text-anchor="middle">world_tick: ONE Numba call</text>
+<text x="405.0" y="304.5" font-size="11" fill="#52514e" text-anchor="middle">agents → fauna → vegetation</text>
+<text x="405.0" y="319.5" font-size="11" fill="#52514e" text-anchor="middle">fire → rewards → births</text>
+<text x="405.0" y="334.5" font-size="11" fill="#52514e" text-anchor="middle">masks → events → observations</text>
+<text x="405.0" y="349.5" font-size="11" fill="#52514e" text-anchor="middle">reward = own drive only</text>
+<text x="405.0" y="364.5" font-size="11" fill="#52514e" text-anchor="middle">(enforced by a unit test)</text>
+<path d="M 240.0 243.0 L 270.0 243.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<rect x="680" y="160" width="360" height="270" rx="12" fill="#fdeee7" fill-opacity="0.35" stroke="#eb6834" stroke-width="1.3" stroke-dasharray="7 5"/>
+<text x="694.0" y="182.0" font-size="13" fill="#1b1b1a" text-anchor="start" font-weight="600">Agents</text>
+<text x="747.2" y="182.0" font-size="11" fill="#52514e" text-anchor="start">agents/ · PyTorch · MPS</text>
+<rect x="700" y="200" width="320" height="58" rx="9" fill="#fdeee7" stroke="#eb6834" stroke-width="1.6"/>
+<text x="860.0" y="225.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Baselines</text>
+<text x="860.0" y="243.5" font-size="11" fill="#52514e" text-anchor="middle">random · greedy forager · heuristic</text>
+<rect x="700" y="272" width="320" height="58" rx="9" fill="#fdeee7" stroke="#eb6834" stroke-width="1.6"/>
+<text x="860.0" y="297.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Learner (shared weights)</text>
+<text x="860.0" y="315.5" font-size="11" fill="#52514e" text-anchor="middle">conv + GRU / MLP actor-critic, per-agent state</text>
+<rect x="700" y="344" width="320" height="66" rx="9" fill="#fdeee7" stroke="#eb6834" stroke-width="1.6"/>
+<text x="860.0" y="366.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">PPO trainer</text>
+<text x="860.0" y="384.0" font-size="11" fill="#52514e" text-anchor="middle">GAE, clipped PPO, BPTT</text>
+<text x="860.0" y="399.0" font-size="11" fill="#52514e" text-anchor="middle">train worlds 1000+  ·  eval worlds 0-4</text>
+<path d="M 540.0 250.0 L 680.0 250.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="610.0" y="230.0" font-size="10.5" fill="#52514e" text-anchor="middle" stroke="#ffffff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">obs, reward,</text>
+<text x="610.0" y="243.0" font-size="10.5" fill="#52514e" text-anchor="middle" stroke="#ffffff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">done, born</text>
+<path d="M 680.0 370.0 L 540.0 370.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="610.0" y="362.0" font-size="10.5" fill="#52514e" text-anchor="middle" stroke="#ffffff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">actions</text>
+<path d="M 530.0 132.0 L 530.0 146.0 L 290.0 146.0 L 290.0 160.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 530.0 146.0 L 860.0 146.0 L 860.0 160.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<rect x="20" y="466" width="1020" height="72" rx="9" fill="#e5f6ef" stroke="#1baf7a" stroke-width="1.6"/>
+<text x="530.0" y="491.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Flight recorder + RunLogger  →  runs/&lt;run&gt;/</text>
+<text x="530.0" y="509.0" font-size="11" fill="#52514e" text-anchor="middle">every agent, every tick: state it acted from, action, reward, death and cause, value, action probabilities</text>
+<text x="530.0" y="524.0" font-size="11" fill="#52514e" text-anchor="middle">fauna · world totals · events with provider uid · births with genes · manual interventions · start-state hash</text>
+<path d="M 405.0 430.0 L 405.0 466.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 860.0 430.0 L 860.0 466.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<rect x="20" y="574" width="240" height="74" rx="9" fill="#fdf3dc" stroke="#c98500" stroke-width="1.6"/>
+<text x="140.0" y="600.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Evaluation</text>
+<text x="140.0" y="618.0" font-size="11" fill="#52514e" text-anchor="middle">held-out worlds, baselines</text>
+<text x="140.0" y="633.0" font-size="11" fill="#52514e" text-anchor="middle">KM, bootstrap CI, Hedges g</text>
+<path d="M 140.0 538.0 L 140.0 574.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<rect x="280" y="574" width="240" height="74" rx="9" fill="#fdf3dc" stroke="#c98500" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="400.0" y="600.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Emergence analysis</text>
+<text x="400.0" y="618.0" font-size="11" fill="#52514e" text-anchor="middle">social, comms, culture, norms</text>
+<text x="400.0" y="633.0" font-size="11" fill="#52514e" text-anchor="middle">against matched null models</text>
+<rect x="467.0" y="565" width="47.0" height="17" rx="8.5" fill="#ffffff" stroke="#c98500" stroke-width="1.2"/>
+<text x="490.5" y="577.5" font-size="9.5" fill="#52514e" text-anchor="middle">planned</text>
+<path d="M 400.0 538.0 L 400.0 574.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<rect x="540" y="574" width="240" height="74" rx="9" fill="#fdf3dc" stroke="#c98500" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="660.0" y="600.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Human comparison</text>
+<text x="660.0" y="618.0" font-size="11" fill="#52514e" text-anchor="middle">onset order vs a cited</text>
+<text x="660.0" y="633.0" font-size="11" fill="#52514e" text-anchor="middle">timeline (analogy only)</text>
+<rect x="727.0" y="565" width="47.0" height="17" rx="8.5" fill="#ffffff" stroke="#c98500" stroke-width="1.2"/>
+<text x="750.5" y="577.5" font-size="9.5" fill="#52514e" text-anchor="middle">planned</text>
+<path d="M 660.0 538.0 L 660.0 574.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<rect x="800" y="574" width="240" height="74" rx="9" fill="#fcebf2" stroke="#d55181" stroke-width="1.6"/>
+<text x="920.0" y="600.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Live viewer</text>
+<text x="920.0" y="618.0" font-size="11" fill="#52514e" text-anchor="middle">aiohttp WebSocket → three.js</text>
+<text x="920.0" y="633.0" font-size="11" fill="#52514e" text-anchor="middle">controls logged, replayable</text>
+<path d="M 920.0 538.0 L 920.0 574.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<rect x="20" y="684" width="760" height="50" rx="9" fill="#f4f4f2" stroke="#8a8984" stroke-width="1.6"/>
+<text x="400.0" y="713.3" font-size="12" fill="#1b1b1a" text-anchor="middle" font-weight="600">reports/ · PREREGISTRATION.md · AGENT_LOG.md (negative results kept)</text>
+<path d="M 140.0 648.0 L 140.0 684.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 400.0 648.0 L 400.0 684.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 660.0 648.0 L 660.0 684.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<rect x="810" y="702" width="14" height="14" rx="3" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.4"/>
+<text x="830.0" y="713.0" font-size="11" fill="#52514e" text-anchor="start">built</text>
+<rect x="870" y="702" width="14" height="14" rx="3" fill="#fdf3dc" stroke="#c98500" stroke-width="1.4" stroke-dasharray="3 2"/>
+<text x="890.0" y="713.0" font-size="11" fill="#52514e" text-anchor="start">dashed = planned</text>
+</svg>

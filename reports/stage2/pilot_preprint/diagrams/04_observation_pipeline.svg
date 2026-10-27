@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="430" viewBox="0 0 1080 430" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" role="img" aria-label="04_observation_pipeline">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#6f6e69"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="24.0" y="34.0" font-size="18" fill="#1b1b1a" text-anchor="start" font-weight="600">Observation pipeline (per agent, per tick)</text>
+<text x="24.0" y="56.0" font-size="12.5" fill="#52514e" text-anchor="start">Partial, egocentric, occluded. The same observations feed learners and baselines.</text>
+<rect x="20" y="92" width="220" height="92" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="130.0" y="119.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">World image img[y, x, 16]</text>
+<text x="130.0" y="137.5" font-size="11" fill="#52514e" text-anchor="middle">observer-independent channels,</text>
+<text x="130.0" y="152.5" font-size="11" fill="#52514e" text-anchor="middle">patched in place at every</text>
+<text x="130.0" y="167.5" font-size="11" fill="#52514e" text-anchor="middle">world mutation</text>
+<rect x="280" y="92" width="200" height="92" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="380.0" y="119.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Egocentric crop</text>
+<text x="380.0" y="137.5" font-size="11" fill="#52514e" text-anchor="middle">11 × 11 around the agent</text>
+<text x="380.0" y="152.5" font-size="11" fill="#52514e" text-anchor="middle">(radius 5; 2 at night,</text>
+<text x="380.0" y="167.5" font-size="11" fill="#52514e" text-anchor="middle">3 in fog)</text>
+<rect x="520" y="92" width="220" height="92" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="630.0" y="119.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Line-of-sight mask</text>
+<text x="630.0" y="137.5" font-size="11" fill="#52514e" text-anchor="middle">precomputed per cell;</text>
+<text x="630.0" y="152.5" font-size="11" fill="#52514e" text-anchor="middle">blocked by a mountain or</text>
+<text x="630.0" y="167.5" font-size="11" fill="#52514e" text-anchor="middle">a second forest cell</text>
+<rect x="780" y="92" width="260" height="92" rx="9" fill="#fdeee7" stroke="#eb6834" stroke-width="1.6"/>
+<text x="910.0" y="119.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">grid  uint8 [N, 11, 11, 16]</text>
+<text x="910.0" y="137.5" font-size="10.5" fill="#52514e" text-anchor="middle">visible, blocked, water, forest, rock,</text>
+<text x="910.0" y="152.5" font-size="10.5" fill="#52514e" text-anchor="middle">shelter, plant, fruit, food, prey ×2,</text>
+<text x="910.0" y="167.5" font-size="10.5" fill="#52514e" text-anchor="middle">predator, agent (kin), fire, signal, snow</text>
+<path d="M 240.0 138.0 L 280.0 138.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 480.0 138.0 L 520.0 138.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 740.0 138.0 L 780.0 138.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<rect x="20" y="230" width="220" height="76" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="130.0" y="257.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Own body</text>
+<text x="130.0" y="275.0" font-size="11" fill="#52514e" text-anchor="middle">energy, hydration, health, warmth,</text>
+<text x="130.0" y="290.0" font-size="11" fill="#52514e" text-anchor="middle">age, carried items, temperature</text>
+<rect x="280" y="230" width="200" height="76" rx="9" fill="#fdeee7" stroke="#eb6834" stroke-width="1.6"/>
+<text x="380.0" y="257.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">self  [13]</text>
+<text x="380.0" y="275.0" font-size="11" fill="#52514e" text-anchor="middle">interoception + light,</text>
+<text x="380.0" y="290.0" font-size="11" fill="#52514e" text-anchor="middle">rain, shelter, maturity</text>
+<rect x="520" y="230" width="220" height="76" rx="9" fill="#fdeee7" stroke="#eb6834" stroke-width="1.6"/>
+<text x="630.0" y="257.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">neighbours  [4 × 9]</text>
+<text x="630.0" y="275.0" font-size="11" fill="#52514e" text-anchor="middle">nearest visible: dx, dy, health,</text>
+<text x="630.0" y="290.0" font-size="11" fill="#52514e" text-anchor="middle">food, kin (+ gated features)</text>
+<rect x="780" y="230" width="260" height="76" rx="9" fill="#fdeee7" stroke="#eb6834" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="910.0" y="257.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">heard signals  [8]</text>
+<text x="910.0" y="275.0" font-size="11" fill="#52514e" text-anchor="middle">communication switch only;</text>
+<text x="910.0" y="290.0" font-size="11" fill="#52514e" text-anchor="middle">radius 9, not occluded</text>
+<rect x="963.5" y="221" width="70.5" height="17" rx="8.5" fill="#ffffff" stroke="#eb6834" stroke-width="1.2"/>
+<text x="998.7" y="233.5" font-size="9.5" fill="#52514e" text-anchor="middle">off by default</text>
+<path d="M 240.0 268.0 L 280.0 268.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 480.0 268.0 L 520.0 268.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="500.0" y="262.0" font-size="10.5" fill="#52514e" text-anchor="middle" stroke="#ffffff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">concat</text>
+<path d="M 740.0 268.0 L 780.0 268.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="760.0" y="262.0" font-size="10.5" fill="#52514e" text-anchor="middle" stroke="#ffffff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">concat</text>
+<rect x="280" y="340" width="760" height="60" rx="9" fill="#fdeee7" stroke="#eb6834" stroke-width="1.6"/>
+<text x="660.0" y="366.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Policy input</text>
+<text x="660.0" y="384.5" font-size="11" fill="#52514e" text-anchor="middle">grid → float / 255 → conv branch      ·      self ‖ neighbours ‖ signals (57) → FC 64</text>
+<path d="M 910.0 184.0 L 910.0 212.0 L 1062.0 212.0 L 1062.0 370.0 L 1040.0 370.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 660.0 306.0 L 660.0 340.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="24.0" y="360.0" font-size="11" fill="#8a8984" text-anchor="start" font-style="italic">dead slots → zeros</text>
+<text x="24.0" y="378.0" font-size="11" fill="#8a8984" text-anchor="start" font-style="italic">info['born'] → reset</text>
+<text x="24.0" y="396.0" font-size="11" fill="#8a8984" text-anchor="start" font-style="italic">that slot's GRU state</text>
+</svg>

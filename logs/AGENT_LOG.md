@@ -318,3 +318,104 @@ Validation worlds [500, 501, 502] (not training, not test), 2 years, 256 agents.
 | ppo:ff_s0 | 1.36 [1.21, 1.45] | 6.44 (4.66, 1.49, 0.30) | 0.00 | 75% |
 | ppo:gru_s0 | 1.48 [1.29, 1.64] | 6.66 (4.86, 1.56, 0.24) | 0.03 | 77% |
 Basal metabolism alone costs 5.0 energy per agent-year (before movement).
+
+## 2026-10-26 23:04 — Live viewer session (heuristic, seed 0)
+
+Viewer run `runs/viewer/20261026_210323_s0_heuristic`: 67391 ticks (17.55 sim years), 256 agents, policy **heuristic** (non-learning baseline).
+- deaths/agent-year 1.88; deaths by cause {'starvation': 520, 'thirst': 3473, 'cold': 616, 'fire': 150, 'predator': 3659, 'old_age': 10}; population at end 256.
+- manual interventions: 0 (none). Sessions with interventions are not comparable to `run_baselines.py` numbers.
+- eating food another agent killed/dropped: 1547 meals (a co-feeding count, not evidence of intentional sharing).
+
+## 2026-10-26 23:18 — Stage 2 training: smoke_eval
+
+PPO (GRU), 256 agents, 3 iterations × 128 ticks (98,304 agent-steps), training worlds 1000+ (eval worlds 0-4 held out).
+- deaths/agent-yr during training: first 1 iters 0.00 → last 1 iters 0.00 (training-time rate with exploration; not an evaluation).
+- last-iteration causes: {}; entropy 2.39.
+- logs: `runs/stage2/smoke_eval/train.jsonl`, checkpoints in `runs/stage2/smoke_eval/checkpoints/`.
+
+## 2026-10-26 23:18 — Live viewer session (rppo:ff_s0, seed 0)
+
+Viewer run `runs/viewer/20261026_230454_s0_rppo:ff_s0`: 8979 ticks (2.34 sim years), 256 agents, policy **rppo:ff_s0** (learned PPO policy).
+- deaths/agent-year 1.53; deaths by cause {'starvation': 736, 'thirst': 158, 'cold': 6, 'fire': 6, 'predator': 7}; population at end 256.
+- manual interventions: 0 (none). Sessions with interventions are not comparable to `run_baselines.py` numbers.
+- eating food another agent killed/dropped: 13 meals (a co-feeding count, not evidence of intentional sharing).
+
+## 2026-10-26 23:39 — Live viewer session (rppo:ff_s0, seed 0)
+
+Viewer run `runs/viewer/20261026_233724_s0_rppo:ff_s0`: 1352 ticks (0.35 sim years), 256 agents, policy **rppo:ff_s0** (learned PPO policy).
+- deaths/agent-year 0.04; deaths by cause {'starvation': 3, 'predator': 1}; population at end 256.
+- manual interventions: 0 (none). Sessions with interventions are not comparable to `run_baselines.py` numbers.
+- eating food another agent killed/dropped: 1 meals (a co-feeding count, not evidence of intentional sharing).
+
+## 2026-10-27 14:43 — Stage 1 baseline survival
+
+Baselines, 2 seeds x 0.5 years, 256 agents, fixed population (respawn).
+
+| policy | deaths / agent-year (95% CI) | Kaplan-Meier survival at 1 yr (95% CI) |
+|---|---|---|
+| random | 2.39 [2.19, 2.60] | 0.153 [0.089, 0.218] |
+| greedy | 1.09 [0.76, 1.41] | 0.568 [0.419, 0.717] |
+| heuristic | 1.22 [1.09, 1.34] | 0.586 [0.543, 0.630] |
+
+Deaths by cause (summed over seeds): **random** {'starvation': 254, 'thirst': 332, 'fire': 4, 'predator': 23}; **greedy** {'starvation': 80, 'thirst': 163, 'fire': 13, 'predator': 22}; **heuristic** {'thirst': 257, 'fire': 5, 'starvation': 2, 'predator': 48}
+
+## 2026-10-27 14:43 — Stage 2 evaluation: short_gru_s0
+
+Checkpoint `runs/stage2/gru_s0/checkpoints/last.pt`, 2 held-out seeds × 0.5 yr, 256 agents, sampled actions. Same protocol and statistics as `run_baselines.py`.
+
+| policy | deaths / agent-yr (95% CI) | Hedges' g (learner − baseline) |
+|---|---|---|
+| **learner (short_gru_s0)** | **0.19 [0.08, 0.30]** | |
+| random | 2.39 [2.19, 2.60] | -5.34 |
+| greedy | 1.09 [0.76, 1.41] | -1.47 |
+| heuristic | 1.22 [1.09, 1.34] | -3.48 |
+
+KM survival at 1 yr 0.905 [0.849, 0.961]; deaths by cause (summed) {'starvation': 27, 'thirst': 15, 'fire': 2, 'predator': 5}.
+Fully recorded: `runs/stage2_eval/short_gru_s0/s*/trajectory/`.
+
+## 2026-10-27 14:44 — Stage 2 evaluation: short_ff_s0
+
+Checkpoint `runs/stage2/ff_s0/checkpoints/last.pt`, 2 held-out seeds × 0.5 yr, 256 agents, sampled actions. Same protocol and statistics as `run_baselines.py`.
+
+| policy | deaths / agent-yr (95% CI) | Hedges' g (learner − baseline) |
+|---|---|---|
+| **learner (short_ff_s0)** | **0.33 [0.33, 0.34]** | |
+| random | 2.39 [2.19, 2.60] | -5.69 |
+| greedy | 1.09 [0.76, 1.41] | -1.31 |
+| heuristic | 1.22 [1.09, 1.34] | -4.05 |
+
+KM survival at 1 yr 0.837 [0.837, 0.837]; deaths by cause (summed) {'starvation': 49, 'thirst': 29, 'predator': 7}.
+Fully recorded: `runs/stage2_eval/short_ff_s0/s*/trajectory/`.
+
+## 2026-10-27 15:25 — Exploratory analyses for the preprint (reports/stage2/pilot_preprint/), pilot runs gru_s0 / ff_s0
+
+Not preregistered (labelled exploratory in the paper). All numbers in `reports/stage2/paper/stats.json`, script `make_figures.py`.
+The two `short_*` evaluations above (0.5 yr, worlds 0-1) were run for this; the "Stage 1 baseline survival" entry just above is the
+matched 0.5-yr baseline run (NOT the canonical 2-yr baselines; `reports/stage1/baselines.json` was restored from git).
+- **Horizon reverses the ranking.** Spring-summer (0.5 yr): GRU 0.19, memoryless 0.33 vs heuristic 1.22 deaths/agent-yr. Two years: 1.80 / 1.58 vs 1.50.
+  Half-year evaluations (the in-training mini-evals) must not be used for claims.
+- **Winter deficit.** Deaths/agent-yr by season (Sp/Su/Au/Wi): GRU 0.76/0.38/1.93/4.09; memoryless 0.78/0.73/1.71/3.03; heuristic 2.42/0.50/0.83/2.16.
+  Winter mean energy of living agents: learners 0.35-0.37, heuristic 0.53.
+- **Energy budget** (eat-event energy, 9.8M agent-ticks/arm): intake 1.31e-3 (GRU) / 1.34e-3 (memoryless) per agent-tick ≈ basal 1.3e-3.
+  Plants 73-74% (mean 0.0094 energy per bite, a third of nominal 0.03), fruit 23-25%, meat 2-3% (mostly scavenged: GRU 25 small kills, 0 large kills
+  in 2,560 agent-yr). First-order expenditure: GRU ≥1.52e-3 (moves 37%, rests 16%), memoryless ≥1.34e-3 (moves 24%, rests 28%; 48% rest in winter).
+- **Drought inflexibility.** DRINK with no water in reach: 78% (GRU) / 91% (memoryless) during droughts vs 30% / 37% otherwise.
+- Negative results unchanged: H2 not supported, H3 mixed. No social behaviour measured.
+
+## 2026-10-27 — H6/H7 analyses applied to PILOT checkpoints (gru_s0, ff_s0); preprint §6.7
+
+Preregistered for the replication; run here on the pilots to test the pipeline (replication stays confirmatory).
+Scripts: `reports/stage2/pilot_preprint/{analysis_h6_h7,aggregation_strict,blind_ablation}.py`; numbers: `stats_h6_h7.json`.
+- **Replay check:** re-running the networks on bit-exact replayed observations reproduces recorded values (corr 1.000, max |Δ| 1.3e-6).
+- **H6 probes (world 0, 1 yr, split by agent):** GRU h: hydration R² 0.70, energy 0.85, predator AUC 0.91 → thresholds met. Memoryless core
+  0.91/0.91/0.78. Caveat: hydration/energy are direct inputs (pre-core encodings decode them better, 0.81-0.94); predators visible on 0.2-0.4% of samples.
+- **Memory test (exploratory), NEGATIVE:** log distance to nearest water when none in view: GRU h R² 0.32 < its pre-core encoding 0.36 ≈ memoryless 0.33.
+  No evidence the GRU state stores water location.
+- **Value calibration (exploratory):** AUC of low value for death within 200 ticks: GRU 0.98, memoryless 0.95 (lowest decile 71-78% vs base 9%).
+- **Cooperative hunts (H7a):** GRU 14 large-prey attacks, 1 multi-attacker episode vs null 0.34 (p 0.34); memoryless 7 / 0; 0 large kills each.
+  Baselines (no social rule) beat the shuffled-timing null (random p 0.004, heuristic p 0.04) → timing-only null is ANTI-CONSERVATIVE; use a
+  co-location-preserving, baseline-calibrated null for the replication.
+- **Aggregation (H7b), clause NOT supported but not social:** Clark-Evans R obs/null (water-matched) GRU 0.77, memoryless 0.82 vs baselines 0.95-0.98;
+  water×terrain×fertility null 0.81 / 0.86 vs 0.97-0.98. Social-blinding ablation (agent channel + neighbour features zeroed, worlds 0-1, 1 yr):
+  clustering INCREASES (0.77→0.71, 0.83→0.78), mortality unchanged (1.74→1.73, 1.49→1.52). Clustering is not mediated by perceiving others.
+  Not counted as emergent social structure.

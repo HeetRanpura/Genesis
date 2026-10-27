@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="560" viewBox="0 0 1060 560" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" role="img" aria-label="07_evaluation_protocol">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#6f6e69"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="24.0" y="34.0" font-size="18" fill="#1b1b1a" text-anchor="start" font-weight="600">Evaluation protocol and decision rule</text>
+<text x="24.0" y="56.0" font-size="12.5" fill="#52514e" text-anchor="start">Identical for learners and baselines; hypotheses and the rule are committed before any evaluation.</text>
+<rect x="20" y="90" width="230" height="92" rx="9" fill="#fdeee7" stroke="#eb6834" stroke-width="1.6"/>
+<text x="135.0" y="117.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Policies under test</text>
+<text x="135.0" y="135.5" font-size="11" fill="#52514e" text-anchor="middle">learner checkpoints</text>
+<text x="135.0" y="150.5" font-size="11" fill="#52514e" text-anchor="middle">random · greedy · heuristic</text>
+<text x="135.0" y="165.5" font-size="11" fill="#52514e" text-anchor="middle">(always all three)</text>
+<rect x="290" y="90" width="300" height="92" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="440.0" y="117.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Same protocol</text>
+<text x="440.0" y="135.5" font-size="11" fill="#52514e" text-anchor="middle">held-out worlds 0-4, never trained on</text>
+<text x="440.0" y="150.5" font-size="11" fill="#52514e" text-anchor="middle">2 simulated years (includes winter)</text>
+<text x="440.0" y="165.5" font-size="11" fill="#52514e" text-anchor="middle">256 agents, respawn, sampled actions</text>
+<rect x="630" y="90" width="410" height="92" rx="9" fill="#e5f6ef" stroke="#1baf7a" stroke-width="1.6"/>
+<text x="835.0" y="117.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Recorded runs</text>
+<text x="835.0" y="135.5" font-size="11" fill="#52514e" text-anchor="middle">events.npy, metrics.csv, full trajectories</text>
+<text x="835.0" y="150.5" font-size="11" fill="#52514e" text-anchor="middle">lifetimes measured from end of spin-up</text>
+<text x="835.0" y="165.5" font-size="11" fill="#52514e" text-anchor="middle">(regression test: the spin-up bug halved mortality)</text>
+<rect x="20" y="230" width="300" height="108" rx="9" fill="#fdf3dc" stroke="#c98500" stroke-width="1.6"/>
+<text x="170.0" y="258.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Metrics</text>
+<text x="170.0" y="276.0" font-size="11" fill="#52514e" text-anchor="middle">deaths per agent-year</text>
+<text x="170.0" y="291.0" font-size="11" fill="#52514e" text-anchor="middle">Kaplan-Meier S(1 yr), median lifetime</text>
+<text x="170.0" y="306.0" font-size="11" fill="#52514e" text-anchor="middle">cause-specific death rates</text>
+<text x="170.0" y="321.0" font-size="11" fill="#52514e" text-anchor="middle">mortality + energy by season</text>
+<rect x="360" y="230" width="280" height="108" rx="9" fill="#fdf3dc" stroke="#c98500" stroke-width="1.6"/>
+<text x="500.0" y="258.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Statistics</text>
+<text x="500.0" y="276.0" font-size="11" fill="#52514e" text-anchor="middle">unit: world (pilot) / training seed</text>
+<text x="500.0" y="291.0" font-size="11" fill="#52514e" text-anchor="middle">95% bootstrap CI</text>
+<text x="500.0" y="306.0" font-size="11" fill="#52514e" text-anchor="middle">Hedges' g vs every baseline</text>
+<text x="500.0" y="321.0" font-size="11" fill="#52514e" text-anchor="middle">paired wins per world</text>
+<rect x="680" y="230" width="360" height="108" rx="9" fill="#f4f4f2" stroke="#8a8984" stroke-width="1.6"/>
+<text x="860.0" y="265.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">PREREGISTRATION.md</text>
+<text x="860.0" y="283.5" font-size="11" fill="#52514e" text-anchor="middle">timestamped, committed before evaluation</text>
+<text x="860.0" y="298.5" font-size="11" fill="#52514e" text-anchor="middle">H1-H4 (pilot), H2', H3', H5-H7 (replication)</text>
+<text x="860.0" y="313.5" font-size="11" fill="#52514e" text-anchor="middle">entries never edited; corrections appended</text>
+<rect x="360" y="380" width="280" height="66" rx="9" fill="#f4f4f2" stroke="#8a8984" stroke-width="1.6"/>
+<text x="500.0" y="417.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Do the 95% CIs overlap?</text>
+<rect x="20" y="380" width="300" height="66" rx="9" fill="#f4f4f2" stroke="#8a8984" stroke-width="1.6"/>
+<text x="170.0" y="409.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">“not distinguishable at n”</text>
+<text x="170.0" y="427.5" font-size="11" fill="#52514e" text-anchor="middle">never reported as a win</text>
+<rect x="680" y="380" width="360" height="66" rx="9" fill="#f4f4f2" stroke="#8a8984" stroke-width="1.6"/>
+<text x="860.0" y="409.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">“A beats B”</text>
+<text x="860.0" y="427.5" font-size="11" fill="#52514e" text-anchor="middle">direction + effect size reported</text>
+<rect x="20" y="480" width="1020" height="54" rx="9" fill="#f4f4f2" stroke="#8a8984" stroke-width="1.6"/>
+<text x="530.0" y="511.3" font-size="12" fill="#1b1b1a" text-anchor="middle" font-weight="600">Report: supported / not supported / mixed  ·  exploratory analyses labelled  ·  negative results logged in AGENT_LOG</text>
+<path d="M 250.0 136.0 L 290.0 136.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 590.0 136.0 L 630.0 136.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 835.0 182.0 L 835.0 206.0 L 170.0 206.0 L 170.0 230.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 320.0 284.0 L 360.0 284.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 500.0 338.0 L 500.0 380.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 860.0 338.0 L 860.0 360.0 L 600.0 360.0 L 600.0 380.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 360.0 413.0 L 320.0 413.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="340.0" y="405.0" font-size="10.5" fill="#52514e" text-anchor="middle" stroke="#ffffff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">yes</text>
+<path d="M 640.0 413.0 L 680.0 413.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="660.0" y="405.0" font-size="10.5" fill="#52514e" text-anchor="middle" stroke="#ffffff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">no</text>
+<path d="M 170.0 446.0 L 170.0 480.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 860.0 446.0 L 860.0 480.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+</svg>

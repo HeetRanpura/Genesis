@@ -32,3 +32,34 @@ The learner code that produced the first evaluation (`agents/rppo.py`) was folde
 H1–H4 and the decision rule above are unchanged. They are re-tested on PPOTrainer runs `gru_s0`/`ff_s0`
 (same seeds, 600 iterations) and reported next to the original results; MPS training is not bit-identical, so the
 re-run is a replication, not a bitwise reproduction.
+
+## Overnight replication: 3 training seeds × {GRU, memoryless} (written 2026-10-26 23:30 IST, before these runs start)
+
+**Setup.** `agents/rppo.py`, the same hyper-parameters as the first slice, with **900 iterations (about 29.5M agent-steps) per run**.
+- Training seeds 1, 2 and 3 for both arms (runs `gru_s1..3`, `ff_s1..3`).
+- Held-out mini-evaluation every 100 iterations (worlds 0–1, 0.5 yr).
+- Final evaluation on worlds 0–4 × 2 yr (full recording).
+- The two first-slice runs (`gru_s0`, `ff_s0`, 600 iterations) are pilots and are **not** pooled into these tests.
+- Statistics: the unit of replication is the training seed (n = 3 per arm). Each seed's score is its mean deaths/agent-yr over the 5 evaluation worlds.
+  We report the mean and the range across seeds, and Hedges' g. With n = 3, CIs are wide, and that will be stated.
+
+- **H2' (learners vs heuristic).** At 29.5M steps, the learners' mean deaths/agent-yr is ≤ the heuristic's 1.50. *Expectation:
+  not distinguishable from the heuristic.*
+- **H3' (memory).** GRU has a lower thirst-death rate than memoryless (direction replicates the pilot), and *no* advantage in all-cause
+  mortality at this budget.
+- **H5 (energy ceiling).** Starvation remains the leading cause of death for both arms, and learners make essentially no
+  large-prey kills (≤ 1 per 1,000 agent-years).
+- **H6 (internal states, probes).** A linear probe on the GRU hidden state decodes the agent's own hydration and energy
+  (R² ≥ 0.5 on held-out ticks) and whether a predator is visible (AUC ≥ 0.7). The same probe on the memoryless trunk is the
+  comparison. These are functional correlates only, never claims of feelings.
+- **H7 (no social coordination, null).** The rate of large-prey attacks with ≥ 2 attackers is not above a shuffled-timing null.
+  Agent spatial aggregation (Clark–Evans R) does not differ from the heuristic baseline's once both are measured relative to
+  distance from water.
+
+## Status note on the overnight replication (appended 2026-10-27; the entry above is unchanged)
+
+The overnight runs were stopped by the user at 154/900 (`gru_s1`) and 262/900 (`ff_s1`) iterations, and
+`agents/rppo.py` was then folded into PPOTrainer. H2', H3' and H5 therefore remain **untested** as preregistered.
+The H6/H7 analyses were applied to the *pilot* checkpoints only as a pipeline test (AGENT_LOG 2026-10-27,
+`reports/stage2/pilot_preprint/`); they are not the confirmatory test. The next replication (HANDOFF_ADVIK Task 1)
+needs its own preregistration entry before evaluation.
