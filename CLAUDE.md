@@ -131,6 +131,10 @@ reward, and how does its order of emergence compare with human prehistory (as st
   The former `agents/rppo.py` (Advik's parallel implementation) was folded in on 2026-10-26; its original results are
   kept in `reports/stage2/rppo_original/`. Eval protocol must match `run_baselines.py`; claims use held-out eval only.
 - PRs: from the fork advikdivekar/Genesis to HeetRanpura/Genesis main; author Advik Divekar only, no co-author trailers.
+- H2/H3 experiment: `make h2h3` (`experiments/run_h2h3.py`, runbook `docs/H2H3_RUNBOOK.md`) trains
+  `h2h3_{gru,ff}_s{1,2,3}` to 3,000 iterations, keeps `iter_XXXXX.pt` every 200 + at 900, evaluates 900 and 3,000
+  on test worlds and applies the preregistered rules (`reports/stage2/h2h3_results.md`). Resumable: re-run the
+  same command. `train_ppo.py --resume` now drops log rows written after the checkpoint (no duplicate iterations).
 
 ## Decisions log
 - 2026-10-26: Numba (not JAX) for the engine — no CUDA on this M4; Numba multi-core gives >100k steps/min.

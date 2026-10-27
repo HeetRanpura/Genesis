@@ -86,25 +86,19 @@ The scripts refuse PPOTrainer checkpoints and any recording whose deaths by caus
 Your M3 Pro trained 20M steps in about 50 min per arm (your report); the Air took 1.0–1.7 h with two runs sharing it,
 and it is fanless and low on disk. So the long runs suit your machine best.
 
-### Task 1: longer, multi-seed training (decides H2 and H3)
-- **Runs:** 2 arms (GRU, memoryless) × 3 learner seeds (0, 1, 2) × **3,000 iterations (~98M agent-steps)**, with
-  `--val-every 50`. On your machine that is about 4 h per run, so run two at a time.
-- **Commands** (one per run):
-
-  ```bash
-  python experiments/train_ppo.py --name gru_s1 --seed 1 --iters 3000 --val-every 50 --record-every 20
-  python experiments/train_ppo.py --name ff_s1 --seed 1 --iters 3000 --val-every 50 --record-every 20 --core mlp
-  ```
-
-  Recording every rollout costs about 2 GB per 20M steps, so roughly 10 GB per 100M-step run; `--record-every 20`
-  cuts that to about 0.5 GB. The disk guard stops recording below 15 GB free anyway.
-- **Preregister first:** append the predictions for H2/H3 at 100M steps to `docs/PREREGISTRATION.md` and commit
-  that before evaluating. Never edit earlier entries.
-- **Evaluate** each run with `make eval NAME=...`.
-- **Report** mean ± CI across the 3 seeds per arm (seed-to-seed variance is the missing piece). Update Table 1
-  and Fig. 5 in the paper and `reports/stage2/STAGE2_REPORT.md`.
-- **Acceptance:** the validation curves (`val.jsonl`) are plotted (`experiments/plot_training.py` draws them),
-  and 3-seed CIs are reported for both arms.
+### Task 1: longer, multi-seed training (decides H2 and H3): one command
+- **Runbook: `docs/H2H3_RUNBOOK.md`.** After `make setup && make test`, run **`make h2h3`**
+  (`experiments/run_h2h3.py`) and leave it running. It trains 2 arms (GRU, memoryless) × learner seeds **1, 2, 3** ×
+  **3,000 iterations** (98.3M agent-steps), two runs at a time, with tqdm progress bars. It keeps a `.pt` every 200
+  iterations and at iteration 900, restarts crashed runs from their checkpoints, resumes after Ctrl-C, evaluates
+  iterations 900 and 3,000 on the held-out worlds, and writes the verdicts to `reports/stage2/h2h3_results.md`.
+- **Already preregistered** (`docs/PREREGISTRATION.md`, "H2/H3 protocol", committed before any of these runs): the
+  iteration-900 test is your H2'/H3'/H5 from the overnight entry; iteration 3,000 is the extension. Run names
+  `h2h3_<arm>_s<seed>` don't collide with your pilot or partial runs.
+- **Expected:** about 13–16 h on the M3 Pro, ~12 GB of disk (start with 25 GB free).
+- **Acceptance:** `h2h3_results.md`, the 12 `eval_h2h3_*.json` and the AGENT_LOG entries committed in a PR; the
+  checkpoints at 900 and 3,000 shared with Heet (runbook §4). Then update Table 1 / Fig. 5 in the paper and
+  `reports/stage2/STAGE2_REPORT.md` with the 3-seed numbers.
 
 ### Task 2: is hunting an exploration problem?
 - **Probe A (world unchanged):** start agents hungry next to small prey for part of training (a curriculum flag in

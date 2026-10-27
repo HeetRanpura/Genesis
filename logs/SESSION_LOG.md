@@ -145,3 +145,16 @@ remain in `runs/viewer/`; a safety check blocked a broad `rm`, so they were left
   recordings and both replication checkpoints are rejected when placed in the pilot tree; pilot-shaped files pass; with no
   pilot runs present `make_figures.py` stops before writing any run-dependent figure. Advik must move his pilot runs
   (commands in `HANDOFF_ADVIK.md`). The preprint itself and its committed figures are unchanged.
+
+## 2026-10-27 (Heet's machine): one-command H2/H3 experiment for the M3 Pro
+- Preregistered the H2/H3 protocol before any run (`docs/PREREGISTRATION.md`): seeds 1-3 × {GRU, memoryless} ×
+  3,000 iterations; iteration 900 is the confirmatory H2'/H3'/H5 test, 3,000 the extension; decision rules fixed.
+- `experiments/run_h2h3.py` (`make h2h3`, runbook `docs/H2H3_RUNBOOK.md`): runs the 6 trainings two at a time with
+  tqdm bars, keeps checkpoints every 200 iterations and at 900, restarts crashed runs from checkpoint (3 retries),
+  resumes after interruption, evaluates on test worlds 0-4 × 2 yr, and writes `reports/stage2/h2h3_results.{md,json}`.
+- `train_ppo.py`: `--keep-every`, `--keep-at`; on resume, log rows after the checkpoint are dropped, and a finished
+  run exits without touching AGENT_LOG. `eval_policy.py`: `--no-record`, auto device, `agent_years` in results.
+  `tqdm` added to the `learn` extra.
+- Verified on toy settings (32 agents, 4-70 iterations): full pipeline end to end; Ctrl-C at iteration 56 resumed
+  from 50 with contiguous logs; a SIGKILLed run was restarted automatically and finished. Toy outputs deleted. The
+  real run has not been started here (it belongs on the M3 Pro).

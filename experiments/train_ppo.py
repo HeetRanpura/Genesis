@@ -77,7 +77,9 @@ def main():
     ap.add_argument("--device", default="mps" if torch.backends.mps.is_available() else "cpu")
     ap.add_argument("--record-every", type=int, default=1, help="record 1 of k rollouts in full (0 = off)")
     ap.add_argument("--min-free-gb", type=float, default=15.0, help="stop recording below this free disk")
-    ap.add_argument("--ckpt-every", type=int, default=25)
+    ap.add_argument("--ckpt-every", type=int, default=25, help="refresh checkpoints/last.pt (for --resume)")
+    ap.add_argument("--keep-every", type=int, default=100, help="keep checkpoints/iter_XXXXX.pt every k iterations")
+    ap.add_argument("--keep-at", default="", help="also keep these iterations, e.g. 900 (comma-separated)")
     ap.add_argument("--resume", action="store_true")
     ap.add_argument("--val-every", type=int, default=50, help="validation every k iterations (0 = off)")
     ap.add_argument("--val-seeds", default="500,501", help="validation worlds (not training, not test)")
@@ -98,11 +100,20 @@ def main():
     if a.resume and (out / "checkpoints" / "last.pt").exists():
         trainer.load(out / "checkpoints" / "last.pt")
         print(f"resumed at iteration {trainer.iteration}", flush=True)
+        for f, last in (("train.jsonl", trainer.iteration - 1), ("val.jsonl", trainer.iteration)):
+            p = out / f                     # drop rows written after the checkpoint: those iterations are redone
+            if p.exists():
+                rows = [r for r in p.read_text().splitlines() if r.strip() and json.loads(r)["iter"] <= last]
+                p.write_text("".join(r + "\n" for r in rows))
+    if trainer.iteration >= a.iters:
+        print(f"{a.name}: already at iteration {trainer.iteration} >= {a.iters}, nothing to do", flush=True)
+        return
     (out / "config.json").write_text(json.dumps(dict(args=vars(a), ppo={k: v for k, v in cfg.__dict__.items() if k != "extra"},
                                                      git_commit=git_commit(), torch=torch.__version__,
                                                      n_actions=trainer.env.n_actions,
                                                      action_names=trainer.env.action_names), indent=2))
     log = open(out / "train.jsonl", "a")
+    keep_at = {int(x) for x in a.keep_at.split(",") if x.strip()}
     world, rec = -1, None
     t_start = time.perf_counter()
     print(f"{a.name}: core={core} device={trainer.dev} agents={a.agents} iters {trainer.iteration}->{a.iters}", flush=True)
@@ -146,9 +157,10 @@ def main():
                                          seconds=round(time.perf_counter() - t0, 1))) + "\n")
             print(f"  validation @ {trainer.agent_steps / 1e6:.1f}M steps: deaths/agent-yr {np.mean(d):.2f} "
                   f"({', '.join(f'{x:.2f}' for x in d)}) [{time.perf_counter() - t0:.0f}s]", flush=True)
-        if trainer.iteration % a.ckpt_every == 0 or trainer.iteration == a.iters:
+        if (trainer.iteration % a.ckpt_every == 0 or trainer.iteration % a.keep_every == 0 or trainer.iteration in keep_at
+                or trainer.iteration == a.iters):
             trainer.save(out / "checkpoints" / "last.pt", world=w)
-            if trainer.iteration % 100 == 0 or trainer.iteration == a.iters:
+            if trainer.iteration % a.keep_every == 0 or trainer.iteration in keep_at or trainer.iteration == a.iters:
                 trainer.save(out / "checkpoints" / f"iter_{trainer.iteration:05d}.pt", world=w)
     if rec:
         rec.close()

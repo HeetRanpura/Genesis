@@ -1,6 +1,6 @@
 PY := .venv/bin/python
 
-.PHONY: setup test bench baselines evidence stage1 viewer-setup viewer train eval
+.PHONY: setup test bench baselines evidence stage1 viewer-setup viewer train eval h2h3
 
 setup:            ## create .venv (Python 3.11) and install
 	uv venv --python 3.11 .venv
@@ -33,3 +33,6 @@ train:            ## train the learner, agents/ppo.py (NAME=gru_s0 ITERS=600 SEE
 
 eval:             ## held-out evaluation of a trained learner, same protocol as the baselines (NAME=gru_s0)
 	$(PY) experiments/eval_policy.py runs/stage2/$(or $(NAME),gru_s0)/checkpoints/last.pt --name $(or $(NAME),gru_s0)
+
+h2h3:             ## preregistered H2/H3 experiment: 6 runs x 3,000 iterations + evaluation, resumable (docs/H2H3_RUNBOOK.md)
+	$(PY) experiments/run_h2h3.py $(ARGS)
