@@ -1,0 +1,75 @@
+{
+  "args": {
+    "checkpoint": "runs/stage2/ff_s0/checkpoints/last.pt",
+    "name": "short_ff_s0",
+    "seeds": 2,
+    "years": 0.5,
+    "agents": 256,
+    "greedy": false
+  },
+  "per_run": [
+    {
+      "policy": "ppo",
+      "seed": 0,
+      "wall_s": 9.4,
+      "deaths_per_agent_year": 0.3280969643707202,
+      "km_survival_1yr": 0.8365885416666665,
+      "median_lifetime_days": 16.0,
+      "deaths_by_cause": {
+        "starvation": 17,
+        "thirst": 25
+      }
+    },
+    {
+      "policy": "ppo",
+      "seed": 1,
+      "wall_s": 9.7,
+      "deaths_per_agent_year": 0.3359081135073225,
+      "km_survival_1yr": 0.8365537065082164,
+      "median_lifetime_days": 16.0,
+      "deaths_by_cause": {
+        "starvation": 32,
+        "thirst": 4,
+        "predator": 7
+      }
+    }
+  ],
+  "summary": {
+    "deaths_per_agent_year": [
+      0.3320025389390214,
+      0.3280969643707202,
+      0.3359081135073225
+    ],
+    "km_survival_1yr": [
+      0.8365711240874414,
+      0.8365537065082164,
+      0.8365885416666665
+    ]
+  },
+  "vs_baselines": {
+    "random": {
+      "baseline": [
+        2.393027867566607,
+        2.1862545750305005,
+        2.599801160102714
+      ],
+      "hedges_g_learner_minus_baseline": -5.694733180378484
+    },
+    "greedy": {
+      "baseline": [
+        1.0856024735460252,
+        0.757662977480437,
+        1.4135419696116136
+      ],
+      "hedges_g_learner_minus_baseline": -1.3130409830054266
+    },
+    "heuristic": {
+      "baseline": [
+        1.2183592472866787,
+        1.0934385550990522,
+        1.3432799394743051
+      ],
+      "hedges_g_learner_minus_baseline": -4.052508693671527
+    }
+  }
+}

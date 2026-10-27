@@ -122,3 +122,14 @@ remain in `runs/viewer/`; a safety check blocked a broad `rm`, so they were left
 - Correction: earlier, in conversation, night-time resting was described as learned, based on one agent seen in the
   viewer. The population analysis shows learners do **not** rest more at night.
 - Kept compute sequential (one job at a time) to avoid heat-throttling the fanless laptop.
+
+## Session 4 (Advik, 2026-10-27): pilot preprint, H6/H7 pipeline, diagrams
+- Live demo of the viewer with every manual disturbance (logged in `runs/viewer/*/controls.jsonl`).
+- `reports/stage2/pilot_preprint/`: NeurIPS-style preprint built from the pilot (rppo) runs. Adds exploratory analyses:
+  half-year vs two-year horizon (the ranking flips), mortality and energy by season (a winter deficit), an energy budget
+  from eat events, drought inflexibility. Also runs the preregistered H6/H7 analyses on the pilot checkpoints as a
+  pipeline test: probes, value calibration, cooperative-hunt null, aggregation vs water/habitat nulls, and a social-blinding
+  ablation. Nine SVG system diagrams (`diagrams/make_diagrams.py`). Ten citations verified online.
+- Rebased onto upstream after the rppo fold: the pilot network is vendored in `pilot_net.py` (old checkpoint format),
+  and pilot numbers are read from `reports/stage2/rppo_original/`.
+- Gotcha found: `run_baselines.py` always overwrites `reports/stage1/baselines.json` (restored from git).

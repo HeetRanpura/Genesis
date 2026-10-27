@@ -87,6 +87,12 @@ reward, and how does its order of emergence compare with human prehistory (as st
   loads/exports and `replay()` re-simulates bit-exactly (needs manual interventions in `env.manual_log` with every
   parameter incl. flood `radius`/`days_given`; if you add a trigger_* method, log all its args and teach `_apply_manual`).
   Any engine change that alters dynamics invalidates replay of older recordings (start-hash check catches it).
+- `experiments/run_baselines.py` ALWAYS overwrites `reports/stage1/baselines.json` (whatever `--out` is), and
+  `eval_policy.py` writes `reports/stage2/eval_<name>.json`. For non-canonical runs, copy the output away and
+  `git checkout` the file.
+- `reports/stage2/pilot_preprint/`: Advik's preprint from the pilot (rppo) runs plus H6/H7 pipeline scripts and nine
+  SVG system diagrams (`diagrams/make_diagrams.py`, needs `rsvg-convert` for PDF/PNG). Pilot checkpoints load only
+  through its `pilot_net.py`; pilot numbers live in `reports/stage2/rppo_original/`. Build with `tectonic -X compile main.tex`.
 - `TEACHER.md` is the team's RL study guide + FAQ: add new concepts/questions there.
 - Test arenas: `tests/helpers.py` (`make_env`, `clear_world`, `put_agent`) — 64×64, no respawn,
   disturbances neutralised.

@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="430" viewBox="0 0 1060 430" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" role="img" aria-label="09_homeostatic_reward">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#6f6e69"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="24.0" y="34.0" font-size="18" fill="#1b1b1a" text-anchor="start" font-weight="600">The only reward: own homeostasis (Keramati &amp; Gutkin 2014)</text>
+<text x="24.0" y="56.0" font-size="12.5" fill="#52514e" text-anchor="start">Nothing about other agents enters the reward. A unit test recomputes it from the body alone every tick.</text>
+<rect x="20" y="96" width="240" height="120" rx="9" fill="#fdeee7" stroke="#eb6834" stroke-width="1.6"/>
+<text x="140.0" y="137.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">What the agent does</text>
+<text x="140.0" y="155.5" font-size="11" fill="#52514e" text-anchor="middle">eat, drink, rest, hunt, shelter</text>
+<text x="140.0" y="170.5" font-size="11" fill="#52514e" text-anchor="middle">move, carry, (signal, strike,</text>
+<text x="140.0" y="185.5" font-size="11" fill="#52514e" text-anchor="middle">build when switched on)</text>
+<rect x="20" y="236" width="240" height="120" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="140.0" y="277.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">What the world does</text>
+<text x="140.0" y="295.5" font-size="11" fill="#52514e" text-anchor="middle">metabolism, heat, cold,</text>
+<text x="140.0" y="310.5" font-size="11" fill="#52514e" text-anchor="middle">predators, fire, kicks,</text>
+<text x="140.0" y="325.5" font-size="11" fill="#52514e" text-anchor="middle">season, weather, drought</text>
+<rect x="310" y="150" width="240" height="150" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="430.0" y="191.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Body state h</text>
+<text x="430.0" y="209.5" font-size="11" fill="#52514e" text-anchor="middle">energy  e</text>
+<text x="430.0" y="224.5" font-size="11" fill="#52514e" text-anchor="middle">hydration  w</text>
+<text x="430.0" y="239.5" font-size="11" fill="#52514e" text-anchor="middle">health  η</text>
+<text x="430.0" y="254.5" font-size="11" fill="#52514e" text-anchor="middle">warmth  θ</text>
+<text x="430.0" y="269.5" font-size="11" fill="#52514e" text-anchor="middle">all in [0, 1]</text>
+<rect x="600" y="96" width="440" height="92" rx="9" fill="#fdf3dc" stroke="#c98500" stroke-width="1.6"/>
+<text x="820.0" y="131.0" font-size="13" fill="#1b1b1a" text-anchor="middle" font-weight="600">Drive</text>
+<text x="820.0" y="149.0" font-size="12" fill="#52514e" text-anchor="middle">D(h) = ‖ max(h* − h, 0) ‖₂</text>
+<text x="820.0" y="164.0" font-size="12" fill="#52514e" text-anchor="middle">setpoint h* = (1, 1, 1, 0.8)</text>
+<rect x="600" y="216" width="440" height="92" rx="9" fill="#fdf3dc" stroke="#c98500" stroke-width="1.6"/>
+<text x="820.0" y="251.0" font-size="13" fill="#1b1b1a" text-anchor="middle" font-weight="600">Reward</text>
+<text x="820.0" y="269.0" font-size="12" fill="#52514e" text-anchor="middle">r_t = D(h_t) − D(h_t+1)  +  c_death · died_t</text>
+<text x="820.0" y="284.0" font-size="12" fill="#52514e" text-anchor="middle">c_death = −1   (reproduction bonus 0 by default)</text>
+<rect x="600" y="330" width="440" height="66" rx="9" fill="#f4f4f2" stroke="#8a8984" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="820.0" y="359.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Never in the reward</text>
+<text x="820.0" y="377.5" font-size="11" fill="#52514e" text-anchor="middle">others' state · sharing · proximity · signals · shaping</text>
+<path d="M 260.0 156.0 L 310.0 190.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 260.0 296.0 L 310.0 262.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 550.0 200.0 L 600.0 150.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 820.0 188.0 L 820.0 216.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="24.0" y="400.0" font-size="11" fill="#8a8984" text-anchor="start" font-style="italic">Learners see r_t ÷ running std of discounted returns (scale only; sign and ordering unchanged).</text>
+</svg>

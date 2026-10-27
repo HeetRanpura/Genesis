@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="560" viewBox="0 0 1060 560" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" role="img" aria-label="08_emergence_measurement">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#6f6e69"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="24.0" y="34.0" font-size="18" fill="#1b1b1a" text-anchor="start" font-weight="600">Measuring emergence (Stage 3-4, planned)</text>
+<text x="24.0" y="56.0" font-size="12.5" fill="#52514e" text-anchor="start">A phenomenon counts only if it beats a null that keeps the ecological confounds. Validated on planted ground truth first.</text>
+<rect x="20" y="92" width="230" height="92" rx="9" fill="#e5f6ef" stroke="#1baf7a" stroke-width="1.6"/>
+<text x="135.0" y="119.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Recordings</text>
+<text x="135.0" y="137.5" font-size="11" fill="#52514e" text-anchor="middle">trajectories, events with</text>
+<text x="135.0" y="152.5" font-size="11" fill="#52514e" text-anchor="middle">provider uid, births + genes,</text>
+<text x="135.0" y="167.5" font-size="11" fill="#52514e" text-anchor="middle">positions, signals</text>
+<rect x="290" y="92" width="420" height="92" rx="9" fill="#fdf3dc" stroke="#c98500" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="500.0" y="119.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Detectors (operational definitions)</text>
+<text x="500.0" y="137.5" font-size="11" fill="#52514e" text-anchor="middle">aggregation · co-feeding · food transfer · reciprocity</text>
+<text x="500.0" y="152.5" font-size="11" fill="#52514e" text-anchor="middle">cooperative hunts · kin bias · signalling · listening</text>
+<text x="500.0" y="167.5" font-size="11" fill="#52514e" text-anchor="middle">displacement · traditions · ratchet · norms</text>
+<rect x="790" y="92" width="250" height="92" rx="9" fill="#fdf3dc" stroke="#c98500" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="915.0" y="119.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Null models</text>
+<text x="915.0" y="137.5" font-size="11" fill="#52514e" text-anchor="middle">shuffled timing / identity,</text>
+<text x="915.0" y="152.5" font-size="11" fill="#52514e" text-anchor="middle">water-distance relocation,</text>
+<text x="915.0" y="167.5" font-size="11" fill="#52514e" text-anchor="middle">baseline agents, rewiring</text>
+<rect x="790" y="220" width="250" height="92" rx="9" fill="#f4f4f2" stroke="#8a8984" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="915.0" y="247.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Validation (unit tests)</text>
+<text x="915.0" y="265.5" font-size="11" fill="#52514e" text-anchor="middle">planted clustering, planted</text>
+<text x="915.0" y="280.5" font-size="11" fill="#52514e" text-anchor="middle">signal-context MI, sharing;</text>
+<text x="915.0" y="295.5" font-size="11" fill="#52514e" text-anchor="middle">baselines must give nulls</text>
+<rect x="290" y="220" width="420" height="92" rx="9" fill="#fdf3dc" stroke="#c98500" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="500.0" y="255.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Detector vs null, over time</text>
+<text x="500.0" y="273.0" font-size="11" fill="#52514e" text-anchor="middle">effect size + 95% band per phenomenon</text>
+<text x="500.0" y="288.0" font-size="11" fill="#52514e" text-anchor="middle">onset = first sustained exceedance of the band</text>
+<rect x="290" y="350" width="420" height="70" rx="9" fill="#fdf3dc" stroke="#c98500" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="500.0" y="381.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Emergence order per run</text>
+<text x="500.0" y="399.5" font-size="11" fill="#52514e" text-anchor="middle">ranked onsets, with triggering conditions</text>
+<rect x="790" y="350" width="250" height="70" rx="9" fill="#f4f4f2" stroke="#8a8984" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="915.0" y="381.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Human timeline</text>
+<text x="915.0" y="399.5" font-size="11" fill="#52514e" text-anchor="middle">cited; else UNVERIFIED</text>
+<rect x="290" y="460" width="750" height="66" rx="9" fill="#fdf3dc" stroke="#c98500" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="665.0" y="489.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Alignment: Kendall τ over onset ranks + condition match</text>
+<text x="665.0" y="507.5" font-size="11" fill="#52514e" text-anchor="middle">reported as a structural analogy only; no claims about minds or early humans</text>
+<rect x="20" y="220" width="230" height="200" rx="9" fill="#fdeee7" stroke="#eb6834" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="135.0" y="271.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Single-variable experiments</text>
+<text x="135.0" y="289.5" font-size="11" fill="#52514e" text-anchor="middle">A memory / world model ×</text>
+<text x="135.0" y="304.5" font-size="11" fill="#52514e" text-anchor="middle">   patchy vs uniform</text>
+<text x="135.0" y="319.5" font-size="11" fill="#52514e" text-anchor="middle">B social learning on/off</text>
+<text x="135.0" y="334.5" font-size="11" fill="#52514e" text-anchor="middle">C communication on/off</text>
+<text x="135.0" y="349.5" font-size="11" fill="#52514e" text-anchor="middle">D famine / flood resilience</text>
+<text x="135.0" y="364.5" font-size="11" fill="#52514e" text-anchor="middle">E 50-seed rerun-the-tape</text>
+<text x="135.0" y="379.5" font-size="11" fill="#52514e" text-anchor="middle">(one switch at a time)</text>
+<path d="M 250.0 138.0 L 290.0 138.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 790.0 138.0 L 710.0 138.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="750.0" y="126.0" font-size="10" fill="#52514e" text-anchor="middle" stroke="#ffffff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">compared with</text>
+<path d="M 500.0 184.0 L 500.0 220.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 790.0 266.0 L 710.0 266.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="750.0" y="254.0" font-size="10" fill="#52514e" text-anchor="middle" stroke="#ffffff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">validates</text>
+<path d="M 500.0 312.0 L 500.0 350.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 500.0 420.0 L 500.0 460.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 915.0 420.0 L 915.0 460.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 135.0 220.0 L 135.0 184.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+</svg>

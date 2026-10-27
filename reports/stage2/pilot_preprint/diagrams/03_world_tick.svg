@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="520" viewBox="0 0 1080 520" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" role="img" aria-label="03_world_tick">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#6f6e69"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="24.0" y="34.0" font-size="18" fill="#1b1b1a" text-anchor="start" font-weight="600">One simulation tick</text>
+<text x="24.0" y="56.0" font-size="12.5" fill="#52514e" text-anchor="start">Per-tick work stays inside a single fused Numba call; each extra Python-side dispatch would cost 5-10 µs.</text>
+<rect x="20" y="175" width="180" height="170" rx="9" fill="#f4f4f2" stroke="#8a8984" stroke-width="1.6"/>
+<text x="110.0" y="226.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">_climate_tick</text>
+<text x="110.0" y="244.5" font-size="11" fill="#52514e" text-anchor="middle">Python</text>
+<text x="110.0" y="259.5" font-size="11" fill="#52514e" text-anchor="middle">season, time of day</text>
+<text x="110.0" y="274.5" font-size="11" fill="#52514e" text-anchor="middle">temperature</text>
+<text x="110.0" y="289.5" font-size="11" fill="#52514e" text-anchor="middle">weather Markov chain</text>
+<text x="110.0" y="304.5" font-size="11" fill="#52514e" text-anchor="middle">disturbance timers</text>
+<rect x="230" y="76" width="640" height="384" rx="12" fill="#eaf2fc" fill-opacity="0.35" stroke="#2a78d6" stroke-width="1.3" stroke-dasharray="7 5"/>
+<text x="244.0" y="98.0" font-size="13" fill="#1b1b1a" text-anchor="start" font-weight="600">kernels.world_tick</text>
+<text x="372.2" y="98.0" font-size="11" fill="#52514e" text-anchor="start">one Numba call</text>
+<rect x="250" y="108" width="280" height="64" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="390.0" y="129.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">1  Agents</text>
+<text x="390.0" y="147.0" font-size="11" fill="#52514e" text-anchor="middle">apply actions; metabolism,</text>
+<text x="390.0" y="162.0" font-size="11" fill="#52514e" text-anchor="middle">movement, carrying costs</text>
+<rect x="570" y="108" width="280" height="64" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="710.0" y="129.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">2  Fauna</text>
+<text x="710.0" y="147.0" font-size="11" fill="#52514e" text-anchor="middle">threat grid → prey proposals</text>
+<text x="710.0" y="162.0" font-size="11" fill="#52514e" text-anchor="middle">→ sequential resolve, births</text>
+<rect x="570" y="196" width="280" height="64" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="710.0" y="217.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">3  Vegetation &amp; trees</text>
+<text x="710.0" y="235.0" font-size="11" fill="#52514e" text-anchor="middle">every 8 ticks, dt-scaled;</text>
+<text x="710.0" y="250.0" font-size="11" fill="#52514e" text-anchor="middle">season, rain, drought, famine</text>
+<rect x="250" y="196" width="280" height="64" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="390.0" y="217.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">4  Fire</text>
+<text x="390.0" y="235.0" font-size="11" fill="#52514e" text-anchor="middle">spread by fuel and dryness,</text>
+<text x="390.0" y="250.0" font-size="11" fill="#52514e" text-anchor="middle">rain extinguishes, scars</text>
+<rect x="250" y="284" width="280" height="64" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="390.0" y="305.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">5  Rewards</text>
+<text x="390.0" y="323.0" font-size="11" fill="#52514e" text-anchor="middle">D(h_t) − D(h_t+1)</text>
+<text x="390.0" y="338.0" font-size="11" fill="#52514e" text-anchor="middle">+ death penalty (own body only)</text>
+<rect x="570" y="284" width="280" height="64" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="710.0" y="305.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">6  Deaths → births / respawn</text>
+<text x="710.0" y="323.0" font-size="11" fill="#52514e" text-anchor="middle">slot refilled; info['born']</text>
+<text x="710.0" y="338.0" font-size="11" fill="#52514e" text-anchor="middle">marks new agents</text>
+<rect x="570" y="372" width="280" height="64" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="710.0" y="393.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">7  Masks + event tally</text>
+<text x="710.0" y="411.0" font-size="11" fill="#52514e" text-anchor="middle">(tick, type, a, b, x, y, value)</text>
+<text x="710.0" y="426.0" font-size="11" fill="#52514e" text-anchor="middle">per-cause death counts</text>
+<rect x="250" y="372" width="280" height="64" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="390.0" y="393.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">8  Observations</text>
+<text x="390.0" y="411.0" font-size="11" fill="#52514e" text-anchor="middle">masked 11×11 crops of the</text>
+<text x="390.0" y="426.0" font-size="11" fill="#52514e" text-anchor="middle">incrementally patched image</text>
+<path d="M 530.0 140.0 L 570.0 140.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 710.0 172.0 L 710.0 196.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 570.0 228.0 L 530.0 228.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 390.0 260.0 L 390.0 284.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 530.0 316.0 L 570.0 316.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 710.0 348.0 L 710.0 372.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 570.0 404.0 L 530.0 404.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<rect x="900" y="175" width="160" height="170" rx="9" fill="#fdeee7" stroke="#eb6834" stroke-width="1.6"/>
+<text x="980.0" y="226.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Returns</text>
+<text x="980.0" y="244.5" font-size="11" fill="#52514e" text-anchor="middle">obs (grid, self,</text>
+<text x="980.0" y="259.5" font-size="11" fill="#52514e" text-anchor="middle">neighbours, signals)</text>
+<text x="980.0" y="274.5" font-size="11" fill="#52514e" text-anchor="middle">rewards, done</text>
+<text x="980.0" y="289.5" font-size="11" fill="#52514e" text-anchor="middle">info['born']</text>
+<text x="980.0" y="304.5" font-size="11" fill="#52514e" text-anchor="middle">events</text>
+<path d="M 200.0 260.0 L 230.0 260.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 870.0 260.0 L 900.0 260.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="240.0" y="494.0" font-size="11" fill="#8a8984" text-anchor="start" font-style="italic">Determinism: randomness only via hash(seed, tick, index, stream); sequential and parallel kernel twins produce identical outputs (tested).</text>
+</svg>
