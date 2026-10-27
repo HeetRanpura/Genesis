@@ -17,6 +17,7 @@ ROOT = HERE.parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(HERE))
 from pilot_net import PilotPolicy as LearnedPolicy  # noqa: E402
+from pilot_runs import checkpoint  # noqa: E402
 from analysis_h6_h7 import SAMPLE, ce_with_null, world_geometry  # noqa: E402
 from sim import GenesisEnv, load_config  # noqa: E402
 from sim.layout import I_X, I_Y  # noqa: E402
@@ -27,7 +28,7 @@ C_AGENT = 12
 def run(arm, seed, blind, years=1.0):
     cfg = load_config(None, overrides={"agents": {"n_initial": 256, "max_agents": 256}})
     env = GenesisEnv(cfg, seed=seed)
-    pol = LearnedPolicy(ROOT / f"runs/stage2/{arm}_s0/checkpoints/last.pt", env, seed=seed)
+    pol = LearnedPolicy(checkpoint(arm), env, seed=seed)
     obs = env.observe()
     pos, deaths = [], 0
     for k in range(int(years * env.year_len)):

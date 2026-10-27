@@ -93,6 +93,10 @@ reward, and how does its order of emergence compare with human prehistory (as st
 - `reports/stage2/pilot_preprint/`: Advik's preprint from the pilot (rppo) runs plus H6/H7 pipeline scripts and nine
   SVG system diagrams (`diagrams/make_diagrams.py`, needs `rsvg-convert` for PDF/PNG). Pilot checkpoints load only
   through its `pilot_net.py`; pilot numbers live in `reports/stage2/rppo_original/`. Build with `tectonic -X compile main.tex`.
+  Its scripts read the pilot's local runs from `runs/stage2_pilot/` (layout and move commands in `pilot_runs.py`),
+  never `runs/stage2/` or `runs/stage2_eval/`: the replication reuses the names `gru_s0`/`ff_s0`, and reading them
+  once silently put replication data into a pilot figure. `pilot_runs` refuses format-2 checkpoints and any recording
+  whose deaths by cause differ from `rppo_original/eval_<arm>_s0.json`.
 - `TEACHER.md` is the team's RL study guide + FAQ: add new concepts/questions there.
 - Test arenas: `tests/helpers.py` (`make_env`, `clear_world`, `put_agent`) — 64×64, no respawn,
   disturbances neutralised.

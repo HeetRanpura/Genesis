@@ -1,8 +1,8 @@
 """The pilot learners' network, vendored so the pilot checkpoints stay loadable.
 
-The pilot runs (runs/stage2/{gru,ff}_s0, held-out results in reports/stage2/rppo_original/) were trained with the
-original agents/rppo.py (commits c5ea9ff, 50143db) before it was folded into PPOTrainer (agents/ppo.py, 79d713a).
-Their checkpoints predate checkpoint format 2, so agents.policy refuses them. This file keeps exactly the network
+The pilot runs (runs/stage2_pilot/{gru,ff}_s0, see pilot_runs.py; held-out results in
+reports/stage2/rppo_original/) were trained with the original agents/rppo.py (commits c5ea9ff, 50143db) before it
+was folded into PPOTrainer (agents/ppo.py, 79d713a). Their checkpoints predate checkpoint format 2, so agents.policy refuses them. This file keeps exactly the network
 and sampling those checkpoints were trained and evaluated with, for the analyses in this folder only. New work
 should use agents.policy / agents.ppo.
 """
@@ -75,7 +75,9 @@ class PilotPolicy:
     """Checkpoint-backed policy with the baselines' interface (act(obs, alive), reset(mask)); sampling as in rppo."""
 
     def __init__(self, checkpoint, env, device: str | None = None, greedy: bool = False, seed: int = 0):
-        ck = torch.load(checkpoint, map_location="cpu", weights_only=False)
+        ck = checkpoint
+        if not isinstance(ck, dict):
+            ck = torch.load(checkpoint, map_location="cpu", weights_only=False)
         self.device = torch.device(device or ("mps" if torch.backends.mps.is_available() else "cpu"))
         torch.manual_seed(seed)
         self.net = ActorCritic(env.n_actions, env.obs_shapes, ck["cfg"]["hidden"], ck["cfg"]["recurrent"]).to(self.device)

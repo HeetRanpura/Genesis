@@ -29,6 +29,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 from agents.baselines import make_baseline  # noqa: E402
 from pilot_net import ActorCritic  # noqa: E402
+from pilot_runs import checkpoint, recording  # noqa: E402
 from analysis.survival import bootstrap_ci  # noqa: E402
 from analysis.trajectories import load, replay  # noqa: E402
 from sim import GenesisEnv, load_config  # noqa: E402
@@ -99,7 +100,7 @@ def positions_baseline(policy, seed, years=2.0):
 
 
 def positions_learner(arm, seed):
-    a = load(ROOT / f"runs/stage2_eval/{arm}_s0/s{seed}", "agents")
+    a = load(recording(arm, seed), "agents")
     t0 = a["tick"].min()
     out = []
     for t in range(t0, a["tick"].max() + 1, SAMPLE):
@@ -155,7 +156,7 @@ def coop_hunts():
         null_runs = []
         for seed in range(5):
             if p in ("gru", "ff"):
-                ev = load(ROOT / f"runs/stage2_eval/{p}_s0/s{seed}", "events")
+                ev = load(recording(p, seed), "events")
             else:
                 ev = np.load(ROOT / f"runs/stage1_baselines/{p}_s{seed}/events.npy")
             att = ev[ev[:, 1] == EV_ATTACK_LARGE]
@@ -199,7 +200,7 @@ def multi_episodes(att, window=6):
 
 # ------------------------------------------------------------------------------------------- probes
 def load_net(arm):
-    ck = torch.load(ROOT / f"runs/stage2/{arm}_s0/checkpoints/last.pt", map_location="cpu", weights_only=False)
+    ck = checkpoint(arm)
     env = GenesisEnv(load_config(None, overrides={"agents": {"n_initial": 256, "max_agents": 256}}), seed=0)
     net = ActorCritic(env.n_actions, env.obs_shapes, ck["cfg"]["hidden"], ck["cfg"]["recurrent"])
     net.load_state_dict(ck["net"])
@@ -209,7 +210,7 @@ def load_net(arm):
 
 @torch.no_grad()
 def collect(arm, years=1.0, every=8):
-    run = ROOT / f"runs/stage2_eval/{arm}_s0/s0"
+    run = recording(arm, 0)
     net = load_net(arm)
     rec_v = load(run, "x_value")
     rec_a = load(run, "agents")
@@ -359,7 +360,7 @@ def value_calibration(horizon=200):
     for arm in ("gru", "ff"):
         V, L = [], []
         for seed in range(5):
-            run = ROOT / f"runs/stage2_eval/{arm}_s0/s{seed}"
+            run = recording(arm, seed)
             a = load(run, "agents")
             v = load(run, "x_value")
             died = a["died"].astype(bool)
@@ -398,7 +399,7 @@ def paths():
     gcol = {"move": INK2, "eat": "#eb6834", "drink": "#2a78d6", "rest": "#c98500"}
     fig, axes = plt.subplots(1, 2, figsize=(6.9, 3.3))
     for ax, arm in zip(axes, ("gru", "ff")):
-        a = load(ROOT / f"runs/stage2_eval/{arm}_s0/s0", "agents")
+        a = load(recording(arm, 0), "agents")
         u, cnt = np.unique(a["uid"], return_counts=True)
         pick = u[np.argsort(cnt)[-3:]]
         rows = np.concatenate([a[a["uid"] == k] for k in pick])

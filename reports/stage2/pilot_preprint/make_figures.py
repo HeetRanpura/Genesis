@@ -2,9 +2,9 @@
 
 Reads only existing outputs; never trains or re-evaluates:
   reports/stage1/baselines.json, runs/stage1_baselines/<policy>_s<k>/metrics.csv      (baselines, worlds 0-4 x 2 yr)
-  reports/stage2/rppo_original/eval_{gru,ff}_s0.json, runs/stage2_eval/{gru,ff}_s0/s<k>/ (pilot learners)
+  reports/stage2/rppo_original/eval_{gru,ff}_s0.json, runs/stage2_pilot/eval/{gru,ff}_s0/s<k>/ (pilot learners)
   reports/stage2/pilot_preprint/data/*short*                                                     (worlds 0-1 x 0.5 yr, exploratory)
-  runs/stage2/<run>/train.jsonl, eval.jsonl                                             (training logs)
+  runs/stage2_pilot/<run>/train.jsonl, eval.jsonl                                             (training logs)
 Writes fig_*.pdf / fig_*.png and stats.json next to this file.
 
     .venv/bin/python reports/stage2/pilot_preprint/make_figures.py
@@ -24,6 +24,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 from analysis.survival import bootstrap_ci, hedges_g  # noqa: E402
 from analysis.trajectories import load  # noqa: E402
+from pilot_runs import recording, train_log  # noqa: E402
 
 OUT = Path(__file__).resolve().parent
 DATA = OUT / "data"
@@ -76,7 +77,7 @@ def per_run_long():
 
 def metrics_dir(p, seed):
     if p in ("gru", "ff"):
-        return ROOT / f"runs/stage2_eval/{p}_s0/s{seed}"
+        return recording(p, seed)
     return ROOT / f"runs/stage1_baselines/{p}_s{seed}"
 
 
@@ -222,7 +223,7 @@ def fig_training():
     fig, axes = plt.subplots(1, 3, figsize=(6.9, 1.9))
     info = {}
     for name, p in runs.items():
-        t = jl(ROOT / f"runs/stage2/{name}/train.jsonl")
+        t = jl(train_log(name))
         steps = np.array([r["agent_steps"] for r in t]) / 1e6
         ent = np.array([r["ent"] for r in t])
         mort = np.array([r["deaths_per_agent_year"] for r in t])
@@ -248,7 +249,7 @@ def fig_training():
                      color=INK2, va="center")
     ev = {}
     for name in ("gru_s1", "ff_s1"):
-        e = jl(ROOT / f"runs/stage2/{name}/eval.jsonl")
+        e = jl(train_log(name, "eval"))
         x = [r["agent_steps"] / 1e6 for r in e]
         y = [r["deaths_per_agent_year"] for r in e]
         axes[2].plot(x, y, color=COLOR[runs[name]], lw=2, marker="o", ms=5, mec="white", mew=0.8)
@@ -284,7 +285,7 @@ def behaviour():
     for k, p in enumerate(("gru", "ff")):
         A, E, W = [], [], []
         for s in range(5):
-            d = ROOT / f"runs/stage2_eval/{p}_s0/s{s}"
+            d = recording(p, s)
             a = load(d, "agents")
             w = load(d, "world")
             ev = load(d, "events")

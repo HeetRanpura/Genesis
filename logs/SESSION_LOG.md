@@ -133,3 +133,15 @@ remain in `runs/viewer/`; a safety check blocked a broad `rm`, so they were left
 - Rebased onto upstream after the rppo fold: the pilot network is vendored in `pilot_net.py` (old checkpoint format),
   and pilot numbers are read from `reports/stage2/rppo_original/`.
 - Gotcha found: `run_baselines.py` always overwrites `reports/stage1/baselines.json` (restored from git).
+
+## 2026-10-27 (Heet's machine): PR #4 merged, pilot run-name collision fixed
+- Reviewed and merged PR #4 (Advik's pilot preprint) by rebase. Tests: 59 pass.
+- Found in review: the pilot scripts read `runs/stage2/{gru,ff}_s0` and `runs/stage2_eval/{gru,ff}_s0`, which on this
+  machine hold the PPOTrainer replication. Checkpoint loads failed loudly, but recording-based analyses silently used
+  replication data (`make_figures.py` rewrote `fig_seasons.png` before crashing; restored from git).
+- Fix: `reports/stage2/pilot_preprint/pilot_runs.py` owns the pilot's paths (`runs/stage2_pilot/`, recordings under
+  `runs/stage2_pilot/eval/`) and checks them: checkpoints must be rppo-format (no `format`, state dict under `net`), and a
+  recording's deaths by cause must equal the pilot's published per-world results. Verified: all 5 replication
+  recordings and both replication checkpoints are rejected when placed in the pilot tree; pilot-shaped files pass; with no
+  pilot runs present `make_figures.py` stops before writing any run-dependent figure. Advik must move his pilot runs
+  (commands in `HANDOFF_ADVIK.md`). The preprint itself and its committed figures are unchanged.

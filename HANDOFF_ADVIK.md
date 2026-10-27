@@ -22,6 +22,19 @@ git fetch upstream && git rebase upstream/main
 
 Then run `make setup` (or at least `uv pip install -e ".[dev,viewer,learn]"`) and `make test`. **59 tests should pass.**
 
+**After PR #4 (pilot preprint):** its scripts now read your pilot runs from `runs/stage2_pilot/` instead of
+`runs/stage2/` and `runs/stage2_eval/`, because the replication (and Task 1 below) reuse the run names. Move them once
+on your machine, after checking those folders hold the pilot and not newer runs:
+
+```bash
+mkdir -p runs/stage2_pilot/eval
+mv runs/stage2/gru_s0 runs/stage2/ff_s0 runs/stage2/gru_s1 runs/stage2/ff_s1 runs/stage2_pilot/
+mv runs/stage2_eval/gru_s0 runs/stage2_eval/ff_s0 runs/stage2_pilot/eval/
+```
+
+The scripts refuse PPOTrainer checkpoints and any recording whose deaths by cause differ from
+`reports/stage2/rppo_original/`, so a wrong folder fails loudly instead of changing a figure.
+
 ## 2. What changed in your code (please skim)
 - **`agents/rppo.py` is gone; its design lives on as the defaults of `agents/ppo.py` (PPOTrainer).**
   - Your network is now the only `ActorCritic` in `agents/policy.py`, with the same layers and orthogonal init.
