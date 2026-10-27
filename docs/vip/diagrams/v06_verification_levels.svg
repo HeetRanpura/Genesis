@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="480" viewBox="0 0 1060 480" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" role="img" aria-label="v06_verification_levels">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#6f6e69"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="24.0" y="34.0" font-size="18" fill="#1b1b1a" text-anchor="start" font-weight="600">Verification and validation levels</text>
+<text x="24.0" y="56.0" font-size="12.5" fill="#52514e" text-anchor="start">The lower levels run on every change (make test, CI). The top level runs once per preregistered experiment.</text>
+<rect x="320" y="80" width="420" height="66" rx="9" fill="#fdf3dc" stroke="#c98500" stroke-width="1.6"/>
+<text x="530.0" y="102.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Scientific validation</text>
+<text x="530.0" y="120.0" font-size="11" fill="#52514e" text-anchor="middle">held-out worlds, baselines, preregistered rules</text>
+<text x="530.0" y="135.0" font-size="11" fill="#52514e" text-anchor="middle">bootstrap CIs, Hedges' g, null models</text>
+<rect x="250" y="160" width="560" height="66" rx="9" fill="#fcebf2" stroke="#d55181" stroke-width="1.6"/>
+<text x="530.0" y="182.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">System tests  (test_viewer, test_recorder)</text>
+<text x="530.0" y="200.0" font-size="11" fill="#52514e" text-anchor="middle">viewer server boots and streams a frame; PettingZoo API conformance</text>
+<text x="530.0" y="215.0" font-size="11" fill="#52514e" text-anchor="middle">a flight recording replays bit-exactly</text>
+<rect x="180" y="240" width="700" height="66" rx="9" fill="#fdeee7" stroke="#eb6834" stroke-width="1.6"/>
+<text x="530.0" y="262.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Integration tests  (test_engine, test_ppo, test_baselines)</text>
+<text x="530.0" y="280.0" font-size="11" fill="#52514e" text-anchor="middle">seeded runs are bit-identical; sequential and parallel kernels agree; obs image matches rebuild</text>
+<text x="530.0" y="295.0" font-size="11" fill="#52514e" text-anchor="middle">learner: unroll equals stepwise, checkpoint round-trip, CPU determinism, GAE stops at death</text>
+<rect x="110" y="320" width="840" height="66" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="530.0" y="342.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Unit tests: world rules  (test_world_rules)</text>
+<text x="530.0" y="360.0" font-size="11" fill="#52514e" text-anchor="middle">terrain blocks movement, drinking only near fresh water, eating raises energy, occlusion,</text>
+<text x="530.0" y="375.0" font-size="11" fill="#52514e" text-anchor="middle">large prey need 2 attackers, fire spreads and is put out, reward = the agent's own drive only</text>
+<rect x="40" y="400" width="980" height="50" rx="9" fill="#f4f4f2" stroke="#8a8984" stroke-width="1.6"/>
+<text x="530.0" y="421.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Process gates</text>
+<text x="530.0" y="439.5" font-size="11" fill="#52514e" text-anchor="middle">CI on every push and PR; review checks attribution, append-only logs, data provenance; preregistration before evaluation</text>
+</svg>

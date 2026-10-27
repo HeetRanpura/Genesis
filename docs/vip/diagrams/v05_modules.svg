@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="500" viewBox="0 0 1060 500" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" role="img" aria-label="v05_modules">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#6f6e69"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="24.0" y="34.0" font-size="18" fill="#1b1b1a" text-anchor="start" font-weight="600">Code structure and dependencies</text>
+<text x="24.0" y="56.0" font-size="12.5" fill="#52514e" text-anchor="start">Arrows point from a package to the packages it imports. The engine imports nothing above it.</text>
+<rect x="24" y="80" width="320" height="96" rx="9" fill="#fdf3dc" stroke="#c98500" stroke-width="1.6"/>
+<text x="184.0" y="109.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">experiments/</text>
+<text x="184.0" y="127.5" font-size="11" fill="#52514e" text-anchor="middle">train_ppo, eval_policy, run_h2h3</text>
+<text x="184.0" y="142.5" font-size="11" fill="#52514e" text-anchor="middle">run_baselines, energy_economy</text>
+<text x="184.0" y="157.5" font-size="11" fill="#52514e" text-anchor="middle">behaviour_analysis, paper_figures</text>
+<rect x="370" y="80" width="320" height="96" rx="9" fill="#fcebf2" stroke="#d55181" stroke-width="1.6"/>
+<text x="530.0" y="109.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">viewer/</text>
+<text x="530.0" y="127.5" font-size="11" fill="#52514e" text-anchor="middle">server.py: aiohttp + sim thread</text>
+<text x="530.0" y="142.5" font-size="11" fill="#52514e" text-anchor="middle">static/: three.js ES modules</text>
+<text x="530.0" y="157.5" font-size="11" fill="#52514e" text-anchor="middle">preview_server.py: stdlib preview</text>
+<rect x="716" y="80" width="320" height="96" rx="9" fill="#f4f4f2" stroke="#8a8984" stroke-width="1.6"/>
+<text x="876.0" y="109.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">tests/</text>
+<text x="876.0" y="127.5" font-size="11" fill="#52514e" text-anchor="middle">59 tests: rules, determinism,</text>
+<text x="876.0" y="142.5" font-size="11" fill="#52514e" text-anchor="middle">learner, recorder, viewer smoke</text>
+<text x="876.0" y="157.5" font-size="11" fill="#52514e" text-anchor="middle">helpers.py: 64x64 test arenas</text>
+<rect x="150" y="236" width="340" height="96" rx="9" fill="#fdeee7" stroke="#eb6834" stroke-width="1.6"/>
+<text x="320.0" y="265.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">agents/</text>
+<text x="320.0" y="283.5" font-size="11" fill="#52514e" text-anchor="middle">policy.py: ActorCritic, PolicyAgent</text>
+<text x="320.0" y="298.5" font-size="11" fill="#52514e" text-anchor="middle">ppo.py: PPOTrainer, GAE</text>
+<text x="320.0" y="313.5" font-size="11" fill="#52514e" text-anchor="middle">baselines.py: random, greedy, heuristic</text>
+<rect x="570" y="236" width="340" height="96" rx="9" fill="#e5f6ef" stroke="#1baf7a" stroke-width="1.6"/>
+<text x="740.0" y="265.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">analysis/</text>
+<text x="740.0" y="283.5" font-size="11" fill="#52514e" text-anchor="middle">survival.py: lifetimes, KM, bootstrap</text>
+<text x="740.0" y="298.5" font-size="11" fill="#52514e" text-anchor="middle">trajectories.py: load, export, replay</text>
+<text x="740.0" y="313.5" font-size="11" fill="#52514e" text-anchor="middle">social.py: planned (Stage 3)</text>
+<rect x="24" y="392" width="1012" height="92" rx="12" fill="#eaf2fc" fill-opacity="0.35" stroke="#2a78d6" stroke-width="1.3" stroke-dasharray="7 5"/>
+<text x="38.0" y="414.0" font-size="13" fill="#1b1b1a" text-anchor="start" font-weight="600">sim/</text>
+<text x="78.8" y="414.0" font-size="11" fill="#52514e" text-anchor="start">world engine: Numba, CPU</text>
+<rect x="44" y="428" width="180" height="40" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="134.0" y="452.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">config, layout</text>
+<rect x="242" y="428" width="180" height="40" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="332.0" y="452.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">worldgen</text>
+<rect x="440" y="428" width="180" height="40" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="530.0" y="452.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">kernels (world_tick)</text>
+<rect x="638" y="428" width="180" height="40" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="728.0" y="452.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">env, pz_env</text>
+<rect x="836" y="428" width="180" height="40" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="926.0" y="452.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">recorder, logger</text>
+<path d="M 240.0 176.0 L 240.0 236.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 450.0 176.0 L 450.0 236.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 640.0 176.0 L 640.0 206.0 L 530.0 206.0 L 530.0 392.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 800.0 176.0 L 800.0 236.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 1000.0 176.0 L 1000.0 392.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 60.0 176.0 L 60.0 392.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 320.0 332.0 L 320.0 392.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 740.0 332.0 L 740.0 392.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+</svg>

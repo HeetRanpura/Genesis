@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="430" viewBox="0 0 1060 430" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" role="img" aria-label="v01_problem_context">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#6f6e69"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="24.0" y="34.0" font-size="18" fill="#1b1b1a" text-anchor="start" font-weight="600">The research problem</text>
+<text x="24.0" y="56.0" font-size="12.5" fill="#52514e" text-anchor="start">Most multi-agent RL builds social structure into the objective. GENESIS removes it and measures what is left.</text>
+<rect x="24" y="80" width="320" height="322" rx="12" fill="#f4f4f2" fill-opacity="0.35" stroke="#8a8984" stroke-width="1.3" stroke-dasharray="7 5"/>
+<text x="38.0" y="102.0" font-size="13" fill="#1b1b1a" text-anchor="start" font-weight="600">Common MARL designs</text>
+<text x="195.0" y="102.0" font-size="11" fill="#52514e" text-anchor="start">social term in the objective</text>
+<rect x="40" y="112" width="288" height="54" rx="9" fill="#f4f4f2" stroke="#8a8984" stroke-width="1.6"/>
+<text x="184.0" y="135.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Team reward</text>
+<text x="184.0" y="153.5" font-size="11" fill="#52514e" text-anchor="middle">one shared return for the group</text>
+<rect x="40" y="176" width="288" height="54" rx="9" fill="#f4f4f2" stroke="#8a8984" stroke-width="1.6"/>
+<text x="184.0" y="199.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Prosocial / inequity terms</text>
+<text x="184.0" y="217.5" font-size="11" fill="#52514e" text-anchor="middle">reward depends on others' payoffs</text>
+<rect x="40" y="240" width="288" height="54" rx="9" fill="#f4f4f2" stroke="#8a8984" stroke-width="1.6"/>
+<text x="184.0" y="263.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Influence and comm. losses</text>
+<text x="184.0" y="281.5" font-size="11" fill="#52514e" text-anchor="middle">reward for affecting others</text>
+<rect x="40" y="314" width="288" height="70" rx="9" fill="#f4f4f2" stroke="#8a8984" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="184.0" y="338.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Question left open</text>
+<text x="184.0" y="356.0" font-size="11" fill="#52514e" text-anchor="middle">did cooperation emerge,</text>
+<text x="184.0" y="371.0" font-size="11" fill="#52514e" text-anchor="middle">or was it specified?</text>
+<rect x="372" y="80" width="316" height="322" rx="12" fill="#eaf2fc" fill-opacity="0.35" stroke="#2a78d6" stroke-width="1.3" stroke-dasharray="7 5"/>
+<text x="386.0" y="102.0" font-size="13" fill="#1b1b1a" text-anchor="start" font-weight="600">GENESIS design</text>
+<text x="497.5" y="102.0" font-size="11" fill="#52514e" text-anchor="start">nothing social is rewarded</text>
+<rect x="388" y="112" width="284" height="70" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="530.0" y="136.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Own homeostasis only</text>
+<text x="530.0" y="154.0" font-size="11" fill="#52514e" text-anchor="middle">r = D(h_t) - D(h_t+1) - death</text>
+<text x="530.0" y="169.0" font-size="11" fill="#52514e" text-anchor="middle">enforced by a unit test</text>
+<rect x="388" y="192" width="284" height="70" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="530.0" y="216.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Ecological affordances</text>
+<text x="530.0" y="234.0" font-size="11" fill="#52514e" text-anchor="middle">cooperative large prey, carried food,</text>
+<text x="530.0" y="249.0" font-size="11" fill="#52514e" text-anchor="middle">scarce water, winters</text>
+<rect x="388" y="272" width="284" height="54" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="530.0" y="295.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Capabilities off by default</text>
+<text x="530.0" y="313.5" font-size="11" fill="#52514e" text-anchor="middle">memory, communication, reproduction</text>
+<rect x="388" y="336" width="284" height="54" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="530.0" y="359.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Preregistered measurement</text>
+<text x="530.0" y="377.5" font-size="11" fill="#52514e" text-anchor="middle">held-out worlds, baselines, nulls</text>
+<rect x="716" y="80" width="320" height="322" rx="12" fill="#fdf3dc" fill-opacity="0.35" stroke="#c98500" stroke-width="1.3" stroke-dasharray="7 5"/>
+<text x="730.0" y="102.0" font-size="13" fill="#1b1b1a" text-anchor="start" font-weight="600">Research questions</text>
+<rect x="732" y="112" width="288" height="70" rx="9" fill="#fdf3dc" stroke="#c98500" stroke-width="1.6"/>
+<text x="876.0" y="136.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">RQ1  Survival</text>
+<text x="876.0" y="154.0" font-size="11" fill="#52514e" text-anchor="middle">do survival-only learners beat</text>
+<text x="876.0" y="169.0" font-size="11" fill="#52514e" text-anchor="middle">hand-written foragers?</text>
+<rect x="732" y="192" width="288" height="70" rx="9" fill="#fdf3dc" stroke="#c98500" stroke-width="1.6"/>
+<text x="876.0" y="216.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">RQ2  Social organisation</text>
+<text x="876.0" y="234.0" font-size="11" fill="#52514e" text-anchor="middle">does grouping, sharing or signalling</text>
+<text x="876.0" y="249.0" font-size="11" fill="#52514e" text-anchor="middle">appear with no social reward?</text>
+<rect x="732" y="272" width="288" height="70" rx="9" fill="#fdf3dc" stroke="#c98500" stroke-width="1.6"/>
+<text x="876.0" y="296.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">RQ3  Order of emergence</text>
+<text x="876.0" y="314.0" font-size="11" fill="#52514e" text-anchor="middle">compared with human prehistory,</text>
+<text x="876.0" y="329.0" font-size="11" fill="#52514e" text-anchor="middle">as a structural analogy only</text>
+<rect x="732" y="352" width="288" height="44" rx="9" fill="#e5f6ef" stroke="#1baf7a" stroke-width="1.6"/>
+<text x="876.0" y="370.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Evidence so far</text>
+<text x="876.0" y="388.5" font-size="11" fill="#52514e" text-anchor="middle">survival: yes; social behaviour: none yet</text>
+<path d="M 344.0 240.0 L 372.0 240.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M 688.0 240.0 L 716.0 240.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+</svg>

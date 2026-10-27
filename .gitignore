@@ -7,3 +7,6 @@ runs/
 .DS_Store
 viewer/node_modules/
 logs/viewer_server.out
+docs/vip/build/node_modules/
+coverage.xml
+.coverage

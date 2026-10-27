@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="470" viewBox="0 0 1060 470" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" role="img" aria-label="v02_subsystems">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#6f6e69"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="24.0" y="34.0" font-size="18" fill="#1b1b1a" text-anchor="start" font-weight="600">System concept: five subsystems</text>
+<text x="24.0" y="56.0" font-size="12.5" fill="#52514e" text-anchor="start">Each subsystem has an owner, an interface and its own tests. The reward rule cuts across all of them.</text>
+<rect x="24" y="90" width="300" height="130" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="174.0" y="129.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">World engine  (sim/)</text>
+<text x="174.0" y="147.0" font-size="11" fill="#52514e" text-anchor="middle">Numba simulator: terrain, fauna, weather,</text>
+<text x="174.0" y="162.0" font-size="11" fill="#52514e" text-anchor="middle">fire, floods, agent physiology</text>
+<text x="174.0" y="177.0" font-size="11" fill="#52514e" text-anchor="middle">interface: GenesisEnv.step(actions)</text>
+<text x="174.0" y="192.0" font-size="11" fill="#52514e" text-anchor="middle">lead: Heet Ranpura</text>
+<rect x="380" y="90" width="300" height="130" rx="9" fill="#fdeee7" stroke="#eb6834" stroke-width="1.6"/>
+<text x="530.0" y="129.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Learning  (agents/)</text>
+<text x="530.0" y="147.0" font-size="11" fill="#52514e" text-anchor="middle">shared actor-critic (conv + GRU/MLP)</text>
+<text x="530.0" y="162.0" font-size="11" fill="#52514e" text-anchor="middle">PPO trainer, baselines, checkpoints</text>
+<text x="530.0" y="177.0" font-size="11" fill="#52514e" text-anchor="middle">interface: act(obs) -&gt; actions</text>
+<text x="530.0" y="192.0" font-size="11" fill="#52514e" text-anchor="middle">lead: Heet; rppo design: Advik</text>
+<rect x="736" y="90" width="300" height="130" rx="9" fill="#fcebf2" stroke="#d55181" stroke-width="1.6"/>
+<text x="886.0" y="129.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Visualisation  (viewer/)</text>
+<text x="886.0" y="147.0" font-size="11" fill="#52514e" text-anchor="middle">three.js live 3-D viewer, 2-D preview</text>
+<text x="886.0" y="162.0" font-size="11" fill="#52514e" text-anchor="middle">dashboard, inspector, disturbances</text>
+<text x="886.0" y="177.0" font-size="11" fill="#52514e" text-anchor="middle">interface: binary WebSocket frames</text>
+<text x="886.0" y="192.0" font-size="11" fill="#52514e" text-anchor="middle">lead: Advik Divekar</text>
+<rect x="202" y="290" width="300" height="130" rx="9" fill="#e5f6ef" stroke="#1baf7a" stroke-width="1.6"/>
+<text x="352.0" y="329.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Measurement  (analysis/)</text>
+<text x="352.0" y="347.0" font-size="11" fill="#52514e" text-anchor="middle">flight recorder, exact replay</text>
+<text x="352.0" y="362.0" font-size="11" fill="#52514e" text-anchor="middle">survival statistics, nulls, behaviour</text>
+<text x="352.0" y="377.0" font-size="11" fill="#52514e" text-anchor="middle">interface: runs/&lt;run&gt;/ recordings</text>
+<text x="352.0" y="392.0" font-size="11" fill="#52514e" text-anchor="middle">leads: Advik (recorder), Heet</text>
+<rect x="558" y="290" width="300" height="130" rx="9" fill="#fdf3dc" stroke="#c98500" stroke-width="1.6"/>
+<text x="708.0" y="329.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Research operations</text>
+<text x="708.0" y="347.0" font-size="11" fill="#52514e" text-anchor="middle">preregistration, AGENT_LOG, handoffs</text>
+<text x="708.0" y="362.0" font-size="11" fill="#52514e" text-anchor="middle">tests, CI, reproducible runs</text>
+<text x="708.0" y="377.0" font-size="11" fill="#52514e" text-anchor="middle">interface: docs/, reports/, PRs</text>
+<text x="708.0" y="392.0" font-size="11" fill="#52514e" text-anchor="middle">shared by both members</text>
+<path d="M 324.0 140.0 L 380.0 140.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="352.0" y="133.0" font-size="10.5" fill="#52514e" text-anchor="middle" stroke="#ffffff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">obs, r</text>
+<path d="M 380.0 175.0 L 324.0 175.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="352.0" y="193.0" font-size="10.5" fill="#52514e" text-anchor="middle" stroke="#ffffff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">actions</text>
+<path d="M 680.0 155.0 L 736.0 155.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="708.0" y="148.0" font-size="10.5" fill="#52514e" text-anchor="middle" stroke="#ffffff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">state</text>
+<path d="M 174.0 220.0 L 174.0 256.0 L 300.0 256.0 L 300.0 290.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="237.0" y="250.0" font-size="10.5" fill="#52514e" text-anchor="middle" stroke="#ffffff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">recordings</text>
+<path d="M 530.0 220.0 L 530.0 256.0 L 420.0 256.0 L 420.0 290.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="530.0" y="452.0" font-size="11" fill="#8a8984" text-anchor="middle" font-style="italic">Research operations governs all five: the hard rules, the logs, the tests and the handoffs.</text>
+</svg>

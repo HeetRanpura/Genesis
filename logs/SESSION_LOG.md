@@ -158,3 +158,14 @@ remain in `runs/viewer/`; a safety check blocked a broad `rm`, so they were left
 - Verified on toy settings (32 agents, 4-70 iterations): full pipeline end to end; Ctrl-C at iteration 56 resumed
   from 50 with contiguous logs; a SIGKILLed run was restarted automatically and finished. Toy outputs deleted. The
   real run has not been started here (it belongs on the M3 Pro).
+
+## 2026-10-27 (Heet's machine): VIP Semester IV and V deliverables, CI
+- `docs/vip/`: Problem Definition Report, Literature Review & Technology Survey (35 references, each checked online;
+  details that could not be confirmed were dropped), Initial System Concept & Feasibility, Team Roles & Working
+  Agreement, notebook/meeting templates, System Design Document, Test & Validation Plan, Sub-team Coordination
+  Report, Concept and Technical presentations. 14 new diagrams/charts in `docs/vip/diagrams/` (built on Advik's
+  diagram helper). Mentor, other members and meeting dates are left [to fill].
+- CI: `.github/workflows/tests.yml` (full suite + coverage on push/PR). Coverage 55% overall, 76% excluding Numba
+  kernels (compiled code is invisible to coverage.py). `make coverage`, `make demo`.
+- QA: all docx/pptx pass the OOXML validator; every page and slide was rendered (Pages/Keynote) and checked.
+  Keynote does not render pptxgenjs native charts, so result charts are images.

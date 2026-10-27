@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="540" viewBox="0 0 1060 540" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" role="img" aria-label="v09_risk_matrix">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#6f6e69"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="24.0" y="34.0" font-size="18" fill="#1b1b1a" text-anchor="start" font-weight="600">Risk matrix</text>
+<text x="24.0" y="56.0" font-size="12.5" fill="#52514e" text-anchor="start">Likelihood x impact of the project's main risks. Mitigations are listed in the System Design Document.</text>
+<rect x="210" y="338" width="270" height="124" fill="#e5f6ef" stroke="#ffffff" stroke-width="3"/>
+<rect x="480" y="338" width="270" height="124" fill="#fdf3dc" stroke="#ffffff" stroke-width="3"/>
+<text x="492.0" y="368.0" font-size="11.5" fill="#1b1b1a" text-anchor="start">R9 unverified citations (fixed)</text>
+<rect x="750" y="338" width="270" height="124" fill="#fdeee7" stroke="#ffffff" stroke-width="3"/>
+<text x="762.0" y="368.0" font-size="11.5" fill="#1b1b1a" text-anchor="start">R5 over-claiming emergence</text>
+<rect x="210" y="214" width="270" height="124" fill="#fdf3dc" stroke="#ffffff" stroke-width="3"/>
+<rect x="480" y="214" width="270" height="124" fill="#fdeee7" stroke="#ffffff" stroke-width="3"/>
+<text x="492.0" y="244.0" font-size="11.5" fill="#1b1b1a" text-anchor="start">R6 disk space for recordings</text>
+<text x="492.0" y="266.0" font-size="11.5" fill="#1b1b1a" text-anchor="start">R8 handover gaps between members</text>
+<rect x="750" y="214" width="270" height="124" fill="#fbdcd0" stroke="#ffffff" stroke-width="3"/>
+<text x="762.0" y="244.0" font-size="11.5" fill="#1b1b1a" text-anchor="start">R2 too few seeds to decide H2/H3</text>
+<text x="762.0" y="266.0" font-size="11.5" fill="#1b1b1a" text-anchor="start">R4 data mix-ups between runs (fixed)</text>
+<rect x="210" y="90" width="270" height="124" fill="#fdeee7" stroke="#ffffff" stroke-width="3"/>
+<text x="222.0" y="120.0" font-size="11.5" fill="#1b1b1a" text-anchor="start">R7 GPU (MPS) not bit-identical</text>
+<rect x="480" y="90" width="270" height="124" fill="#fbdcd0" stroke="#ffffff" stroke-width="3"/>
+<text x="492.0" y="120.0" font-size="11.5" fill="#1b1b1a" text-anchor="start">R3 laptop heat and compute limits</text>
+<rect x="750" y="90" width="270" height="124" fill="#f7c4b2" stroke="#ffffff" stroke-width="3"/>
+<text x="762.0" y="120.0" font-size="11.5" fill="#1b1b1a" text-anchor="start">R1 learners never discover hunting</text>
+<text x="345.0" y="484.0" font-size="12" fill="#52514e" text-anchor="middle">low</text>
+<text x="196.0" y="404.0" font-size="12" fill="#52514e" text-anchor="end">low</text>
+<text x="615.0" y="484.0" font-size="12" fill="#52514e" text-anchor="middle">medium</text>
+<text x="196.0" y="280.0" font-size="12" fill="#52514e" text-anchor="end">medium</text>
+<text x="885.0" y="484.0" font-size="12" fill="#52514e" text-anchor="middle">high</text>
+<text x="196.0" y="156.0" font-size="12" fill="#52514e" text-anchor="end">high</text>
+<text x="615.0" y="506.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">impact</text>
+<text x="80.0" y="276.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">likelihood</text>
+</svg>

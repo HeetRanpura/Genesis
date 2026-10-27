@@ -1,6 +1,6 @@
 PY := .venv/bin/python
 
-.PHONY: setup test bench baselines evidence stage1 viewer-setup viewer train eval h2h3
+.PHONY: setup test coverage bench baselines evidence stage1 viewer-setup viewer demo train eval h2h3
 
 setup:            ## create .venv (Python 3.11) and install
 	uv venv --python 3.11 .venv
@@ -9,6 +9,9 @@ setup:            ## create .venv (Python 3.11) and install
 
 test:
 	$(PY) -m pytest -q
+
+coverage:         ## tests with line coverage (Numba-compiled kernels run as machine code and show as uncovered)
+	$(PY) -m pytest -q --cov=sim --cov=agents --cov=analysis --cov=viewer --cov-report=term
 
 bench:            ## headless throughput table -> reports/stage1/bench.json
 	$(PY) experiments/bench_sim.py
@@ -27,6 +30,9 @@ viewer-setup:     ## three.js for the live viewer (pinned in viewer/package.json
 
 viewer:           ## live viewer at http://localhost:8787 (SEED=, POLICY=, AGENTS=, PORT=)
 	$(PY) -m viewer.server --seed $(or $(SEED),0) --policy $(or $(POLICY),heuristic) --port $(or $(PORT),8787) $(if $(AGENTS),--agents $(AGENTS),)
+
+demo: $(if $(wildcard viewer/node_modules/three),,viewer-setup)   ## one-command demo: viewer with the trained GRU learner if present, else the heuristic
+	$(PY) -m viewer.server --seed 0 --policy $(if $(wildcard runs/stage2/gru_s0/checkpoints/last.pt),ppo:gru_s0,heuristic) --port $(or $(PORT),8787) --no-agent-log
 
 train:            ## train the learner, agents/ppo.py (NAME=gru_s0 ITERS=600 SEED=0; MEMORYLESS=1 for the ablation)
 	$(PY) experiments/train_ppo.py --name $(or $(NAME),gru_s0) --iters $(or $(ITERS),600) --seed $(or $(SEED),0) $(if $(MEMORYLESS),--no-memory,)

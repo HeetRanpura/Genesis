@@ -1,0 +1,34 @@
+# Runs the full test suite with coverage on every push and pull request to main (docs/vip/sem5/: Test & Validation Plan).
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Python 3.11 environment (CPU build of torch)
+        run: |
+          uv venv --python 3.11 .venv
+          uv pip install --python .venv/bin/python torch --index-url https://download.pytorch.org/whl/cpu
+          uv pip install --python .venv/bin/python -e ".[dev,viewer,learn]"
+      - name: three.js for the viewer smoke test (pinned in viewer/package.json)
+        run: cd viewer && npm install --no-audit --no-fund
+      - name: Tests with coverage
+        run: .venv/bin/python -m pytest -q --cov=sim --cov=agents --cov=analysis --cov=viewer --cov-report=term --cov-report=xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: coverage.xml

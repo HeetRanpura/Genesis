@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="300" viewBox="0 0 1060 300" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" role="img" aria-label="v10_viewer_architecture">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#6f6e69"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="24.0" y="34.0" font-size="18" fill="#1b1b1a" text-anchor="start" font-weight="600">Live viewer architecture</text>
+<text x="24.0" y="56.0" font-size="12.5" fill="#52514e" text-anchor="start">The browser only displays. All simulation happens in the server's sim thread, so viewing never changes results.</text>
+<rect x="24" y="96" width="300" height="110" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="174.0" y="132.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Sim thread</text>
+<text x="174.0" y="150.5" font-size="11" fill="#52514e" text-anchor="middle">GenesisEnv + policy (baseline or PPO)</text>
+<text x="174.0" y="165.5" font-size="11" fill="#52514e" text-anchor="middle">commands applied between ticks</text>
+<text x="174.0" y="180.5" font-size="11" fill="#52514e" text-anchor="middle">speed changes pacing, not results</text>
+<rect x="380" y="96" width="300" height="110" rx="9" fill="#f4f4f2" stroke="#8a8984" stroke-width="1.6"/>
+<text x="530.0" y="132.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">aiohttp server</text>
+<text x="530.0" y="150.5" font-size="11" fill="#52514e" text-anchor="middle">binary WebSocket protocol</text>
+<text x="530.0" y="165.5" font-size="11" fill="#52514e" text-anchor="middle">compact per-tick state frames</text>
+<text x="530.0" y="180.5" font-size="11" fill="#52514e" text-anchor="middle">every control -&gt; controls.jsonl</text>
+<rect x="736" y="96" width="300" height="110" rx="9" fill="#fcebf2" stroke="#d55181" stroke-width="1.6"/>
+<text x="886.0" y="132.5" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Browser (three.js)</text>
+<text x="886.0" y="150.5" font-size="11" fill="#52514e" text-anchor="middle">diorama camera, day/night, weather</text>
+<text x="886.0" y="165.5" font-size="11" fill="#52514e" text-anchor="middle">dashboard: 7 live charts</text>
+<text x="886.0" y="180.5" font-size="11" fill="#52514e" text-anchor="middle">inspector, minimap, director</text>
+<path d="M 324.0 130.0 L 380.0 130.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="352.0" y="123.0" font-size="10.5" fill="#52514e" text-anchor="middle" stroke="#ffffff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">state</text>
+<path d="M 380.0 172.0 L 324.0 172.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="352.0" y="190.0" font-size="10.5" fill="#52514e" text-anchor="middle" stroke="#ffffff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">cmds</text>
+<path d="M 680.0 130.0 L 736.0 130.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="708.0" y="123.0" font-size="10.5" fill="#52514e" text-anchor="middle" stroke="#ffffff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">frames</text>
+<path d="M 736.0 172.0 L 680.0 172.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="708.0" y="190.0" font-size="10.5" fill="#52514e" text-anchor="middle" stroke="#ffffff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">controls</text>
+<text x="530.0" y="256.0" font-size="11" fill="#8a8984" text-anchor="middle" font-style="italic">Sessions are logged under runs/viewer/&lt;session&gt;/; manual disturbances are replayable bit-exactly.</text>
+</svg>

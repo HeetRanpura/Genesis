@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="290" viewBox="0 0 1060 290" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" role="img" aria-label="v07_ci_pipeline">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#6f6e69"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="24.0" y="34.0" font-size="18" fill="#1b1b1a" text-anchor="start" font-weight="600">Continuous integration</text>
+<text x="24.0" y="56.0" font-size="12.5" fill="#52514e" text-anchor="start">Every push and pull request to main runs the whole test suite on a clean Linux machine.</text>
+<rect x="24" y="96" width="180" height="86" rx="9" fill="#f4f4f2" stroke="#8a8984" stroke-width="1.6"/>
+<text x="114.0" y="128.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Push / PR</text>
+<text x="114.0" y="146.0" font-size="11" fill="#52514e" text-anchor="middle">to main, or a PR</text>
+<text x="114.0" y="161.0" font-size="11" fill="#52514e" text-anchor="middle">from a fork</text>
+<rect x="231" y="96" width="180" height="86" rx="9" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="321.0" y="128.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Clean runner</text>
+<text x="321.0" y="146.0" font-size="11" fill="#52514e" text-anchor="middle">ubuntu-latest</text>
+<text x="321.0" y="161.0" font-size="11" fill="#52514e" text-anchor="middle">Python 3.11 via uv</text>
+<path d="M 204.0 139.0 L 231.0 139.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<rect x="438" y="96" width="180" height="86" rx="9" fill="#fdeee7" stroke="#eb6834" stroke-width="1.6"/>
+<text x="528.0" y="128.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Install</text>
+<text x="528.0" y="146.0" font-size="11" fill="#52514e" text-anchor="middle">-e .[dev,viewer,learn]</text>
+<text x="528.0" y="161.0" font-size="11" fill="#52514e" text-anchor="middle">CPU build of torch</text>
+<path d="M 411.0 139.0 L 438.0 139.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<rect x="645" y="96" width="180" height="86" rx="9" fill="#fdf3dc" stroke="#c98500" stroke-width="1.6"/>
+<text x="735.0" y="128.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Test</text>
+<text x="735.0" y="146.0" font-size="11" fill="#52514e" text-anchor="middle">pytest with coverage</text>
+<text x="735.0" y="161.0" font-size="11" fill="#52514e" text-anchor="middle">Numba compiled fresh</text>
+<path d="M 618.0 139.0 L 645.0 139.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<rect x="852" y="96" width="180" height="86" rx="9" fill="#e5f6ef" stroke="#1baf7a" stroke-width="1.6"/>
+<text x="942.0" y="128.0" font-size="12.5" fill="#1b1b1a" text-anchor="middle" font-weight="600">Report</text>
+<text x="942.0" y="146.0" font-size="11" fill="#52514e" text-anchor="middle">status on the commit/PR</text>
+<text x="942.0" y="161.0" font-size="11" fill="#52514e" text-anchor="middle">coverage report artifact</text>
+<path d="M 825.0 139.0 L 852.0 139.0" fill="none" stroke="#6f6e69" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="530.0" y="236.0" font-size="11" fill="#8a8984" text-anchor="middle" font-style="italic">Local gate before every PR: make test runs the same suite. Determinism tests fail on any unintended change to the dynamics.</text>
+</svg>
